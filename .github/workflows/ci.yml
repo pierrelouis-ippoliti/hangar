@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A new push to the same branch cancels the run still in progress.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.8"
+          enable-cache: true
+
+      # --locked fails if uv.lock no longer matches pyproject.toml.
+      - name: Install from the lock file
+        run: uv sync --locked
+
+      - name: Ruff lint
+        run: uv run ruff check
+
+      - name: Ruff format
+        run: uv run ruff format --check
+
+      - name: mypy
+        run: uv run mypy
+
+      - name: Import rules
+        run: uv run lint-imports
+
+      # The default marker selection leaves out the model and llm tests.
+      - name: Tests
+        run: uv run pytest --cov=hangar --cov-report=term-missing
