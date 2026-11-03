@@ -25,22 +25,12 @@ jobs:
           version: "0.11.8"
           enable-cache: true
 
-      # --locked fails if uv.lock no longer matches pyproject.toml.
+      # --locked fails if uv.lock no longer matches pyproject.toml. Only the
+      # dev group is installed: CI never runs the DVC pipeline.
       - name: Install from the lock file
         run: uv sync --locked
 
-      - name: Ruff lint
-        run: uv run ruff check
-
-      - name: Ruff format
-        run: uv run ruff format --check
-
-      - name: mypy
-        run: uv run mypy
-
-      - name: Import rules
-        run: uv run lint-imports
-
+      # The same target developers run locally, so the two can't drift.
       # The default marker selection leaves out the model and llm tests.
-      - name: Tests
-        run: uv run pytest --cov=hangar --cov-report=term-missing
+      - name: Lint, format, types, import rules and tests
+        run: make check
