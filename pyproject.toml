@@ -41,6 +41,42 @@ convention = "google"
 strict = true
 files = ["src"]
 
+[tool.importlinter]
+root_package = "hangar"
+
+# A layer may import the layers below it, never those above. Packages in
+# parentheses are optional, so the contract holds before they exist.
+# Stages on the same line are siblings and may not import each other.
+[[tool.importlinter.contracts]]
+name = "Layers: cli, pipelines, stages, observability, core"
+type = "layers"
+layers = [
+    "hangar.cli",
+    "(hangar.pipelines)",
+    "(hangar.retrieval)",
+    "(hangar.corpus) | (hangar.parsing) | (hangar.chunking) | (hangar.embedding) | (hangar.indexing) | (hangar.generation) | (hangar.evaluation)",
+    "(hangar.observability)",
+    "(hangar.core)",
+]
+
+# The layers above would let cli reach every package; it may use only
+# pipelines and observability.
+[[tool.importlinter.contracts]]
+name = "cli imports only pipelines and observability"
+type = "forbidden"
+source_modules = ["hangar.cli"]
+forbidden_modules = [
+    "hangar.core",
+    "hangar.corpus",
+    "hangar.parsing",
+    "hangar.chunking",
+    "hangar.embedding",
+    "hangar.indexing",
+    "hangar.retrieval",
+    "hangar.generation",
+    "hangar.evaluation",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib", "-m", "not model and not llm"]
