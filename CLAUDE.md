@@ -60,6 +60,16 @@ Rules that cut across files:
 
 ## Git workflow
 
-- Branch per version (`v0/baseline`, `v1/evaluation`, …), squash merges into a protected `main`.
+- Claude writes the code; the maintainer reviews every pull request. Explain each change in clear, plain language in the PR description.
+- One short branch per issue, named `v<version>/<issue>-<slug>` (for example `v0/2-uv-skeleton`), squash-merged into `main` through a pull request. One pull request per issue.
 - Conventional Commits: `feat`, `fix`, `docs`, `test`, `chore`.
+
+## Versions, tags and releases
+
+The tag is always `v` followed by the version in `pyproject.toml`. Bump the version and tag `main` after the last pull request of a milestone is merged.
+
+- Milestone M*k* of Hangar version *N* is the pre-release `N.0.0ak`: M0 of v0 is `0.0.0a0` (tag `v0.0.0a0`), M5 is `0.0.0a5`.
+- The final milestone of a version is the release `N.0.0`: v0 is `0.0.0` (tag `v0.0.0`), v1 is `1.0.0`.
+- Milestone tags get no GitHub release. Each version gets one GitHub release, titled like "Hangar v0 · Baseline", carrying its CHANGELOG notes and results files.
+- `CHANGELOG.md` gets one section per tag.
 - Decision records (ADR-0001 to ADR-0007) go in `docs/adr/`, each written in the milestone whose issue asks for it.
