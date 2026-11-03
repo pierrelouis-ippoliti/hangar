@@ -1,0 +1,4 @@
+# The build pipeline: fetch, parse, chunk, embed, index, then the seed run.
+# Each stage issue adds its own stage here, with its parameters read from
+# configs/pipelines/v0.yaml.
+stages: {}
