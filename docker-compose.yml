@@ -1,0 +1,13 @@
+services:
+  qdrant:
+    image: qdrant/qdrant:v1.20.0
+    # Qdrant has no authentication by default, so it listens on this
+    # machine only.
+    ports:
+      - "127.0.0.1:6333:6333" # HTTP API
+      - "127.0.0.1:6334:6334" # gRPC API
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  qdrant-data:
