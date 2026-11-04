@@ -50,6 +50,13 @@ convention = "google"
 [tool.mypy]
 strict = true
 files = ["src"]
+plugins = ["pydantic.mypy"]
+
+# Let mypy check the arguments passed to pydantic models, as it does for
+# ordinary classes.
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
 
 [tool.importlinter]
 root_package = "hangar"
