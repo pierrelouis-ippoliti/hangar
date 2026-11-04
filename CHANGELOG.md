@@ -4,6 +4,12 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
+### Unreleased · M1 Corpus C1
+
+Added:
+
+- Environment settings, the pipeline configuration schema with `configs/pipelines/v0.yaml`, and the configuration hash (#9).
+
 ### 0.0.0a0 · M0 Repository and tooling (2026-11-04)
 
 The repository, its tooling and CI, before the first pipeline feature. No pipeline code yet.

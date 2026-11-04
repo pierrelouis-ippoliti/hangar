@@ -1,10 +1,14 @@
 [project]
 name = "hangar"
-version = "0.0.0a0"
+version = "0.0.0a1.dev0"
 description = "A RAG system over the FAA maintenance handbooks and Transport Canada's maintenance rules."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "pydantic>=2.14.2",
+    "pydantic-settings>=2.16.2",
+    "pyyaml>=6.0.3",
+]
 
 [project.scripts]
 hangar = "hangar.cli:main"
@@ -17,6 +21,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.3",
+    "types-pyyaml>=6.0.12.20261103",
 ]
 pipeline = [
     "dvc>=3.67.1",
@@ -45,6 +50,13 @@ convention = "google"
 [tool.mypy]
 strict = true
 files = ["src"]
+plugins = ["pydantic.mypy"]
+
+# Let mypy check the arguments passed to pydantic models, as it does for
+# ordinary classes.
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
 
 [tool.importlinter]
 root_package = "hangar"
