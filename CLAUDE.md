@@ -6,23 +6,25 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Hangar is a RAG system over the FAA maintenance technician handbooks and Transport Canada's maintenance rules (CAR Subparts 571 and 573, Standards 571 and 573, ACs 571-xxx and 573-xxx). It is rebuilt in public, one measured version at a time (v0 to v12).
 
-**No code exists yet.** The plan lives in the GitHub milestones and issues of `pierrelouis-ippoliti/hangar`. Each issue states its scope and acceptance criteria; read the relevant issue (`gh issue view <n>`) before starting work, and reference it in commits and pull requests. Once written, `docs/architecture.md` and `docs/adr/` record the design.
+**The tooling is in place (M0); the pipeline code is not yet.** `src/hangar/` holds only the `hangar` command with `--version`. A package folder (`core`, `parsing`, …) is created when its first real file arrives, never as an empty placeholder. The plan lives in the GitHub milestones and issues of `pierrelouis-ippoliti/hangar`. Each issue states its scope and acceptance criteria; read the relevant issue (`gh issue view <n>`) before starting work, and reference it in commits and pull requests. `docs/architecture.md` and `docs/adr/` record the design; fill in a stage's section of `docs/architecture.md` in the issue that builds it.
+
+In public text, always pair the name with its subtitle, "Hangar - cited answers from aircraft maintenance documents", because an aviation product called HangarOS exists.
 
 The PDF library is pypdfium2, not PyMuPDF: PyMuPDF is AGPL-3.0, which would bind Hangar's own licence.
 
-## Commands (planned in M0, not yet in place)
+## Commands
 
-The stack is Python 3.12 managed with uv; ruff, mypy (strict on `src/`), import-linter and pytest.
+The stack is Python 3.12 managed with uv; ruff, mypy (strict on `src/`), import-linter and pytest. Dev tools sit in the `dev` dependency group; DVC sits in the `pipeline` group, which CI doesn't install.
 
-- `make setup`: install from `uv.lock` and the pre-commit hooks.
-- `make check`: lint, format check, types, import rules and tests, exactly as CI runs them.
+- `make setup`: install every dependency group from `uv.lock` and the pre-commit hooks.
+- `make check`: lint, format check, types, import rules and tests. CI runs this same target, so add a new check here, not in `ci.yml`.
 - `make qdrant-up` / `make qdrant-down`: start and stop Qdrant through Docker Compose.
 - `make reproduce`: setup, Qdrant, then every DVC stage from a clean clone.
 - `make clean-data`: delete `data/` and the Qdrant volume (asks for confirmation).
 - Single test: `uv run pytest tests/unit/test_file.py::test_name`.
 - Tests marked `model` (real BGE-M3) and `llm` (real Mistral call, needs the API key) run only locally, never in CI.
 
-The `hangar` CLI has one subcommand per stage, each taking a pipeline config (default `configs/pipelines/v0.yaml`): `doctor`, `fetch`, `parse`, `chunk`, `embed`, `index`, `search` (retrieval only, no LLM), `ask`, `seed run`, `seed summarize`. DVC stages in `dvc.yaml` mirror the build commands, so DVC reruns only what a parameter change affects.
+The `hangar` CLI (built with `argparse`) will have one subcommand per stage, each taking a pipeline config (default `configs/pipelines/v0.yaml`): `doctor`, `fetch`, `parse`, `chunk`, `embed`, `index`, `search` (retrieval only, no LLM), `ask`, `seed run`, `seed summarize`. DVC stages in `dvc.yaml` mirror the build commands, so DVC reruns only what a parameter change affects.
 
 ## Architecture
 
