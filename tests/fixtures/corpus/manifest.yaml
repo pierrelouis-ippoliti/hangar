@@ -1,0 +1,63 @@
+# A test manifest with made-up documents, URLs and hashes. It holds no
+# Transport Canada text.
+snapshot: c1
+documents:
+  - id: example-handbook
+    title: Example Maintenance Handbook
+    authority: FAA
+    type: handbook
+    language: en
+    source_url: https://example.org/example-handbook.pdf
+    format: pdf
+    edition: B
+    content_date: 2023-01-01
+    page_modified_date: 2024-06-01
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: 1111111111111111111111111111111111111111111111111111111111111111
+    reuse_note: Made up for tests.
+
+  - id: example-regulation
+    title: Example Regulations
+    authority: TC
+    type: regulation
+    language: en
+    source_url: https://example.org/example-regulation.xml
+    format: xml
+    edition: 2026
+    content_date: 2026-06-18
+    page_modified_date: 2026-10-15
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: 2222222222222222222222222222222222222222222222222222222222222222
+    reuse_note: Made up for tests.
+
+  - id: example-ac-cancelled
+    title: Example Cancelled Advisory Circular
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://example.org/example-ac-cancelled.html
+    format: html
+    edition: "1"
+    content_date: 2005-03-01
+    page_modified_date: 2020-01-15
+    retrieved_on: 2026-11-04
+    status: cancelled
+    sha256: 3333333333333333333333333333333333333333333333333333333333333333
+    reuse_note: Made up for tests.
+
+  - id: example-standard
+    title: Example Standard
+    authority: TC
+    type: standard
+    language: en
+    source_url: https://example.org/example-standard.html
+    format: html
+    edition: "2010"
+    content_date: 2010-01-01
+    page_modified_date: 2024-12-04
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: 4444444444444444444444444444444444444444444444444444444444444444
+    reuse_note: Made up for tests.
