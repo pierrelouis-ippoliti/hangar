@@ -36,6 +36,7 @@ One package, `src/hangar/`, split by stage. Dependency rules, enforced by import
 - Stage packages (`corpus`, `parsing`, `chunking`, `embedding`, `indexing`, `retrieval`, `generation`, `evaluation`) import `core` only. The one exception: `retrieval` may import the embedding and indexing interfaces.
 - Adapters (Qdrant, Mistral, sentence-transformers, pypdfium2) live inside their stage package. Only `pipelines` constructs them, through a registry keyed by type names in the config.
 - `pipelines` imports stages and `core`; `cli` imports `pipelines` only. `observability` imports `core` only and may be used everywhere.
+- `files` (reading YAML files) imports `core` only, so stages and `pipelines` can read files while `core` stays free of I/O.
 
 Rules that cut across files:
 

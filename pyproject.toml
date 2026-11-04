@@ -65,14 +65,14 @@ root_package = "hangar"
 # parentheses are optional, so the contract holds before they exist.
 # Stages on the same line are siblings and may not import each other.
 [[tool.importlinter.contracts]]
-name = "Layers: cli, pipelines, stages, observability, core"
+name = "Layers: cli, pipelines, stages, observability and files, core"
 type = "layers"
 layers = [
     "hangar.cli",
     "(hangar.pipelines)",
     "(hangar.retrieval)",
     "(hangar.corpus) | (hangar.parsing) | (hangar.chunking) | (hangar.embedding) | (hangar.indexing) | (hangar.generation) | (hangar.evaluation)",
-    "(hangar.observability)",
+    "(hangar.observability) | (hangar.files)",
     "(hangar.core)",
 ]
 
@@ -92,6 +92,7 @@ forbidden_modules = [
     "hangar.retrieval",
     "hangar.generation",
     "hangar.evaluation",
+    "hangar.files",
 ]
 
 [tool.pytest.ini_options]
