@@ -2,10 +2,8 @@
 
 from pathlib import Path
 
-import yaml
-
 from hangar.core.config import PipelineConfig, parse_pipeline_config
-from hangar.core.errors import ConfigError, FieldProblem
+from hangar.files import read_yaml
 
 
 def load_pipeline_config(path: Path) -> PipelineConfig:
@@ -23,17 +21,4 @@ def load_pipeline_config(path: Path) -> PipelineConfig:
             doesn't hold a valid configuration. The error names the file,
             and the field when there is one.
     """
-    source = str(path)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as error:
-        raise ConfigError(
-            source, [FieldProblem(None, f"can't read the file: {error.strerror}")]
-        ) from error
-    try:
-        data = yaml.safe_load(text)
-    except yaml.YAMLError as error:
-        raise ConfigError(
-            source, [FieldProblem(None, f"invalid YAML: {error}")]
-        ) from error
-    return parse_pipeline_config(data, source)
+    return parse_pipeline_config(read_yaml(path), str(path))

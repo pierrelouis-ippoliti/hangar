@@ -2,10 +2,9 @@
 
 from pathlib import Path
 
-import yaml
-
 from hangar.core.corpus import DocumentSpec, parse_manifest
 from hangar.core.errors import ConfigError, FieldProblem
+from hangar.files import read_yaml
 
 
 def load_snapshot(path: Path, snapshot: str) -> tuple[DocumentSpec, ...]:
@@ -29,7 +28,7 @@ def load_snapshot(path: Path, snapshot: str) -> tuple[DocumentSpec, ...]:
             names the file, and the field when there is one.
     """
     source = str(path)
-    manifest = parse_manifest(_read_yaml(path), source)
+    manifest = parse_manifest(read_yaml(path), source)
     if manifest.snapshot != snapshot:
         raise ConfigError(
             source,
@@ -42,19 +41,3 @@ def load_snapshot(path: Path, snapshot: str) -> tuple[DocumentSpec, ...]:
             ],
         )
     return manifest.active_documents()
-
-
-def _read_yaml(path: Path) -> object:
-    source = str(path)
-    try:
-        text = path.read_text(encoding="utf-8")
-    except OSError as error:
-        raise ConfigError(
-            source, [FieldProblem(None, f"can't read the file: {error.strerror}")]
-        ) from error
-    try:
-        return yaml.safe_load(text)
-    except yaml.YAMLError as error:
-        raise ConfigError(
-            source, [FieldProblem(None, f"invalid YAML: {error}")]
-        ) from error
