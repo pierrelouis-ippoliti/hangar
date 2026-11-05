@@ -3,17 +3,20 @@ The corpus manifest: which documents a snapshot holds, and where they come from.
 
 The manifest is written by hand. Each entry says where to download a
 document and the SHA-256 it must have. This module validates the manifest's
-content; reading the file is the ``corpus`` package's job.
+content; reading the file is the ``corpus`` package's job. It also defines
+the record of a downloaded file, the raw artifact.
 """
 
 import datetime
 from typing import Literal
 
 from pydantic import (
+    AwareDatetime,
     BaseModel,
     ConfigDict,
     Field,
     HttpUrl,
+    NonNegativeInt,
     ValidationError,
     field_validator,
 )
@@ -24,6 +27,8 @@ Authority = Literal["FAA", "TC"]
 DocumentType = Literal["handbook", "regulation", "standard", "advisory_circular"]
 DocumentFormat = Literal["pdf", "xml", "html"]
 DocumentStatus = Literal["active", "cancelled"]
+
+SHA256_PATTERN = r"^[0-9a-f]{64}$"
 
 
 class DocumentSpec(BaseModel):
@@ -68,7 +73,7 @@ class DocumentSpec(BaseModel):
     page_modified_date: datetime.date
     retrieved_on: datetime.date
     status: DocumentStatus
-    sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+    sha256: str = Field(pattern=SHA256_PATTERN)
     reuse_note: str = Field(min_length=1)
 
 
@@ -166,3 +171,46 @@ def _duplicate_ids(documents: tuple[DocumentSpec, ...]) -> list[FieldProblem]:
             first_position[spec.id] = position
 
     return problems
+
+
+def raw_artifact_id(spec: DocumentSpec) -> str:
+    """
+    Give the ID of a document's downloaded file, which is also its file name.
+
+    Args:
+        spec: The document.
+
+    Returns:
+        The document ID followed by its format as the extension, such as
+        ``faa-h-8083-31b.pdf``.
+    """
+    return f"{spec.id}.{spec.format}"
+
+
+class RawArtifact(BaseModel):
+    """
+    One downloaded document file, as recorded in the fetch log.
+
+    Attributes:
+        id: The file's ID, from ``raw_artifact_id``, such as
+            ``faa-h-8083-31b.pdf``.
+        document_id: The manifest ID of the document.
+        path: Where the file was written.
+        sha256: The file's SHA-256, as 64 lowercase hex characters.
+        size_bytes: The file's size.
+        fetched_at: When the download finished, with its time zone.
+        etag: The server's ``ETag`` header, or None if it sent none.
+        last_modified: The server's ``Last-Modified`` header, as sent, or
+            None if it sent none.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    path: str = Field(min_length=1)
+    sha256: str = Field(pattern=SHA256_PATTERN)
+    size_bytes: NonNegativeInt
+    fetched_at: AwareDatetime
+    etag: str | None
+    last_modified: str | None
