@@ -77,11 +77,13 @@ layers = [
 ]
 
 # The layers above would let cli reach every package; it may use only
-# pipelines and observability.
+# pipelines and observability. It reaches the rest through pipelines,
+# so only its own imports are checked.
 [[tool.importlinter.contracts]]
 name = "cli imports only pipelines and observability"
 type = "forbidden"
 source_modules = ["hangar.cli"]
+allow_indirect_imports = true
 forbidden_modules = [
     "hangar.core",
     "hangar.corpus",
