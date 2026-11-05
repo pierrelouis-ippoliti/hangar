@@ -42,10 +42,13 @@ Each version asks one question, changes one thing and is measured before it is a
 ## Documentation
 
 - [Architecture](docs/architecture.md): principles, data flow and package rules.
+- [Data card](docs/data-card.md): what corpus C1 holds, its sizes and its known gaps.
 - [Decision records](docs/adr/): why the main choices were made.
 - [Backlog](docs/backlog.md): ideas parked for later versions.
 - [Changelog](CHANGELOG.md): what each tag changed.
 
 ## Licence
 
-The code is released under the [MIT licence](LICENSE). The corpus documents are not part of this repository and stay under their publishers' terms.
+The code is released under the [MIT licence](LICENSE). The corpus documents are not part of this repository and stay under their publishers' terms. [`NOTICE.md`](NOTICE.md) gives each source's terms and how Hangar quotes it, and [ADR-0003](docs/adr/0003-licences.md) explains the choices.
+
+Hangar is an independent project. It is not affiliated with or endorsed by the Federal Aviation Administration or Transport Canada.
