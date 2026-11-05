@@ -1,3 +1,4 @@
+import hashlib
 import json
 import socket
 from importlib.metadata import version
@@ -5,8 +6,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import yaml
 
 from hangar.cli import main
+from hangar.corpus.download import LocalCopyDownloader
 
 ROOT = Path(__file__).resolve().parents[2]
 V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
@@ -20,7 +23,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["fetch"],
     ["parse"],
     ["chunk"],
     ["embed"],
@@ -88,7 +90,7 @@ def test_config_defaults_to_the_v0_pipeline(workspace: Path) -> None:
     (workspace / "configs" / "pipelines").mkdir(parents=True)
     (workspace / "configs" / "pipelines" / "v0.yaml").write_text(V0_CONFIG.read_text())
 
-    main(["fetch"])
+    main(["parse"])
 
     assert any(
         r["message"].startswith("read configs/pipelines/v0.yaml")
@@ -183,3 +185,88 @@ def test_unexpected_error_is_logged_with_its_traceback_and_the_key_redacted(
     assert last["message"] == "hangar doctor stopped on an unexpected error"
     assert "RuntimeError: request failed with key [REDACTED]" in last["exception"]
     assert FAKE_KEY not in capsys.readouterr().err
+
+
+def write_corpus(
+    workspace: Path, monkeypatch: pytest.MonkeyPatch, *, wrong_hash_for: str = ""
+) -> tuple[Path, LocalCopyDownloader]:
+    """Write a two-document manifest and a config that uses it; serve the files."""
+    sources = workspace / "sources"
+    sources.mkdir()
+    documents, files = [], {}
+
+    for document_id, content in [("doc-one", b"one"), ("doc-two", b"two")]:
+        (sources / document_id).write_bytes(content)
+        url = f"https://example.org/{document_id}.pdf"
+        files[url] = sources / document_id
+        sha256 = hashlib.sha256(content).hexdigest()
+        documents.append(
+            {
+                "id": document_id,
+                "title": "Example",
+                "authority": "FAA",
+                "type": "handbook",
+                "language": "en",
+                "source_url": url,
+                "format": "pdf",
+                "edition": "B",
+                "content_date": "2023-01-01",
+                "page_modified_date": "2023-01-01",
+                "retrieved_on": "2026-11-04",
+                "status": "active",
+                "sha256": "f" * 64 if document_id == wrong_hash_for else sha256,
+                "reuse_note": "Made up for tests.",
+            }
+        )
+
+    manifest = workspace / "manifest.yaml"
+    manifest.write_text(yaml.safe_dump({"snapshot": "c1", "documents": documents}))
+    config = yaml.safe_load(V0_CONFIG.read_text())
+    config["corpus"]["manifest"] = str(manifest)
+    config_path = workspace / "pipeline.yaml"
+    config_path.write_text(yaml.safe_dump(config))
+
+    downloader = LocalCopyDownloader(files)
+    monkeypatch.setattr(
+        "hangar.pipelines.fetch.HttpDownloader", lambda user_agent: downloader
+    )
+
+    return config_path, downloader
+
+
+def test_fetch_downloads_every_document_then_nothing_on_a_second_run(
+    monkeypatch: pytest.MonkeyPatch, workspace: Path
+) -> None:
+    config, downloader = write_corpus(workspace, monkeypatch)
+
+    assert main(["fetch", "--config", str(config)]) == 0
+    assert sorted(p.name for p in (workspace / "data" / "raw").iterdir()) == [
+        "doc-one.pdf",
+        "doc-two.pdf",
+        "fetch-log.jsonl",
+    ]
+    assert {r["document_id"] for r in log_records(workspace)} >= {"doc-one", "doc-two"}
+
+    downloader.downloaded.clear()
+    for log_file in (workspace / "data" / "logs").glob("*.jsonl"):
+        log_file.unlink()
+
+    assert main(["fetch", "--config", str(config)]) == 0
+    assert downloader.downloaded == []
+    assert any(
+        "0 downloaded, 2 already present" in r["message"]
+        for r in log_records(workspace)
+    )
+
+
+def test_fetch_stops_on_a_hash_mismatch_with_an_error_naming_the_document(
+    monkeypatch: pytest.MonkeyPatch, workspace: Path
+) -> None:
+    config, _ = write_corpus(workspace, monkeypatch, wrong_hash_for="doc-two")
+
+    assert main(["fetch", "--config", str(config)]) == 1
+
+    last = log_records(workspace)[-1]
+    assert last["level"] == "ERROR"
+    assert last["message"].startswith("doc-two: ")
+    assert "SHA-256" in last["message"]
