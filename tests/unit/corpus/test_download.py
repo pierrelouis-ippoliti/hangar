@@ -1,3 +1,4 @@
+import gzip
 import hashlib
 import threading
 from collections.abc import Iterator
@@ -28,6 +29,9 @@ class FakeSite:
     # Status codes a path answers, in order, before it serves its page.
     failures: dict[str, list[int]] = field(default_factory=dict)
     requests: list[tuple[str, str | None]] = field(default_factory=list)
+    # The Content-Encoding a path is sent with, such as "gzip". "cut-gzip"
+    # sends gzip with the second half of the data missing.
+    encodings: dict[str, str] = field(default_factory=dict)
 
 
 @pytest.fixture
@@ -50,7 +54,19 @@ def site() -> Iterator[FakeSite]:
                 return
 
             body = fake.pages[self.path]
+            encoding = fake.encodings.get(self.path)
+
+            if encoding in ("gzip", "cut-gzip"):
+                body = gzip.compress(body)
+
+            if encoding == "cut-gzip":
+                body, encoding = body[: len(body) // 2], "gzip"
+
             self.send_response(200)
+
+            if encoding:
+                self.send_header("Content-Encoding", encoding)
+
             self.send_header("Content-Length", str(len(body)))
             self.send_header("ETag", ETAG)
             self.send_header("Last-Modified", LAST_MODIFIED)
@@ -212,3 +228,47 @@ def test_file_sha256_matches_hashlib(tmp_path: Path) -> None:
     path.write_bytes(b"hangar")
 
     assert file_sha256(path) == hashlib.sha256(b"hangar").hexdigest()
+
+
+def test_gzip_encoded_answer_is_saved_and_hashed_decoded(
+    site: FakeSite, tmp_path: Path
+) -> None:
+    # The Wayback Machine replays pages gzip-encoded, even when not asked to.
+    body = b"<html>" + b"standard text " * 200_000 + b"</html>"
+    site.pages["/snapshot"] = body
+    site.encodings["/snapshot"] = "gzip"
+    destination = tmp_path / "snapshot.html"
+
+    result = downloader(FakeTime()).download(f"{site.url}/snapshot", destination)
+
+    assert destination.read_bytes() == body
+    assert result.size_bytes == len(body)
+    assert result.sha256 == hashlib.sha256(body).hexdigest()
+
+
+def test_unknown_content_encoding_fails_without_a_retry(
+    site: FakeSite, tmp_path: Path
+) -> None:
+    site.pages["/page"] = b"text"
+    site.encodings["/page"] = "br"
+
+    with pytest.raises(DownloadError) as error_info:
+        downloader(FakeTime()).download(f"{site.url}/page", tmp_path / "page")
+
+    assert "br" in str(error_info.value)
+    assert len(site.requests) == 1
+
+
+def test_gzip_data_that_ends_early_is_retried_then_fails(
+    site: FakeSite, tmp_path: Path
+) -> None:
+    site.pages["/snapshot"] = bytes(range(256)) * 1000
+    site.encodings["/snapshot"] = "cut-gzip"
+
+    with pytest.raises(DownloadError) as error_info:
+        downloader(FakeTime(), min_delay_seconds=0).download(
+            f"{site.url}/snapshot", tmp_path / "snapshot"
+        )
+
+    assert "ended early" in str(error_info.value)
+    assert len(site.requests) == 3

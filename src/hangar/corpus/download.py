@@ -11,7 +11,8 @@ import http.client
 import time
 import urllib.error
 import urllib.request
-from collections.abc import Callable, Mapping
+import zlib
+from collections.abc import Callable, Iterator, Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import BinaryIO, Protocol
@@ -23,6 +24,10 @@ CHUNK_BYTES = 1024 * 1024
 
 # Statuses that mean "try again later" rather than "this will never work".
 RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
+
+# Content-Encoding values the downloader can undo. The Wayback Machine sends
+# gzip even to a client that asks for none, so gzip must be handled.
+GZIP_ENCODINGS = frozenset({"gzip", "x-gzip"})
 
 
 class DownloadError(HangarError):
@@ -75,6 +80,9 @@ class HttpDownloader:
     Busy or failing servers (429 and 5xx statuses) and network errors are
     retried, waiting ``backoff_seconds``, then twice that, and so on. Other
     statuses, such as 404, fail at once.
+
+    A gzip-encoded answer is decoded while it streams, so the file written
+    and its hash are those of the document itself.
     """
 
     def __init__(
@@ -141,7 +149,7 @@ class HttpDownloader:
                     raise DownloadError(f"{url} answered {error.code}") from error
 
                 reason = f"it answered {error.code}"
-            except (OSError, http.client.HTTPException) as error:
+            except (OSError, http.client.HTTPException, zlib.error) as error:
                 reason = str(getattr(error, "reason", error))
 
         raise DownloadError(
@@ -158,13 +166,27 @@ class HttpDownloader:
         self._last_request = self._clock()
 
     def _get(self, url: str, destination: Path) -> Download:
-        request = urllib.request.Request(url, headers={"User-Agent": self._user_agent})
+        request = urllib.request.Request(
+            url,
+            headers={"User-Agent": self._user_agent, "Accept-Encoding": "identity"},
+        )
 
-        with (
-            urllib.request.urlopen(request, timeout=self._timeout) as response,
-            destination.open("wb") as file,
-        ):
-            size, sha256 = _copy_and_hash(response, file)
+        with urllib.request.urlopen(request, timeout=self._timeout) as response:
+            encoding = response.headers.get("Content-Encoding", "identity").lower()
+
+            if encoding in GZIP_ENCODINGS:
+                # 16 + MAX_WBITS: expect a gzip header and trailer.
+                decoder = zlib.decompressobj(16 + zlib.MAX_WBITS)
+            elif encoding == "identity":
+                decoder = None
+            else:
+                raise DownloadError(
+                    f"{url} was sent with Content-Encoding {encoding!r}, "
+                    "which Hangar can't decode"
+                )
+
+            with destination.open("wb") as file:
+                size, sha256 = _copy_and_hash(response, file, decoder)
 
             return Download(
                 size_bytes=size,
@@ -232,14 +254,30 @@ def file_sha256(path: Path) -> str:
 
 
 def _copy_and_hash(
-    source: BinaryIO | http.client.HTTPResponse, target: BinaryIO
+    source: BinaryIO | http.client.HTTPResponse,
+    target: BinaryIO,
+    decoder: "zlib._Decompress | None" = None,
 ) -> tuple[int, str]:
     digest = hashlib.sha256()
     size = 0
 
-    while chunk := source.read(CHUNK_BYTES):
+    for chunk in _chunks(source, decoder):
         digest.update(chunk)
         target.write(chunk)
         size += len(chunk)
 
     return size, digest.hexdigest()
+
+
+def _chunks(
+    source: BinaryIO | http.client.HTTPResponse,
+    decoder: "zlib._Decompress | None",
+) -> Iterator[bytes]:
+    while chunk := source.read(CHUNK_BYTES):
+        yield decoder.decompress(chunk) if decoder else chunk
+
+    if decoder:
+        yield decoder.flush()
+
+        if not decoder.eof:
+            raise zlib.error("the gzip data ended early")
