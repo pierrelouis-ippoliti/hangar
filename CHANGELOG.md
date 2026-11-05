@@ -4,14 +4,16 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
-### Unreleased · M1 Corpus C1
+### 0.0.0a1 · M1 Corpus C1 (2026-11-05)
+
+Corpus C1 and the first build stage: `hangar fetch` downloads its 18 documents and checks each one against the manifest's SHA-256.
 
 Added:
 
 - Environment settings, the pipeline configuration schema with `configs/pipelines/v0.yaml`, and the configuration hash (#9).
-- Validation of the corpus manifest, and a loader that returns the active documents of a snapshot (#12).
-- The C1 corpus manifest with 18 documents, the list in `configs/corpus/c1.yaml`, and a record of how the scope rule was applied (#11).
 - One `hangar` subcommand per stage, structured logs that carry the run ID, stage and document and redact the API key, and `hangar doctor` (#10).
+- The C1 corpus manifest with 18 documents, the list in `configs/corpus/c1.yaml`, and a record of how the scope rule was applied (#11).
+- Validation of the corpus manifest, and a loader that returns the active documents of a snapshot (#12).
 - `hangar fetch` and its DVC stage: the downloader, the hash checks and the fetch log. The Transport Canada pages now come from fixed Wayback Machine snapshots, and each manifest entry gains an `official_url` for citations (#13).
 - `NOTICE.md` with each source's reuse terms and attribution, the C1 data card draft, and ADR-0003 on licences (#14).
 
