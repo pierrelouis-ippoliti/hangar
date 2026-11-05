@@ -1,0 +1,35 @@
+# Snapshot C1: the corpus every version up to v9 runs on.
+#
+# C1 follows a rule rather than a hand-picked list, so anyone can re-derive
+# it. corpus/c1-scope.md records how the rule was applied on 2026-11-04,
+# including what it left out. A test checks that this list matches the active
+# documents of the manifest.
+snapshot: c1
+manifest: corpus/manifest.yaml
+rule: >-
+  The three FAA maintenance technician handbooks, plus everything Transport
+  Canada numbers 571 or 573: CAR Subparts 571 and 573, Standards 571 and 573,
+  and every active advisory circular numbered 571-xxx or 573-xxx.
+documents:
+  # FAA maintenance technician handbooks
+  - faa-h-8083-30b
+  - faa-h-8083-31b
+  - faa-h-8083-32b
+  # Canadian Aviation Regulations (the parser keeps Subparts 571 and 573)
+  - car-sor-96-433
+  # Standards
+  - tc-std-571
+  - tc-std-573
+  # Advisory circulars
+  - tc-ac-571-002
+  - tc-ac-571-004
+  - tc-ac-571-006
+  - tc-ac-571-024
+  - tc-ac-571-025
+  - tc-ac-571-026
+  - tc-ac-573-002
+  - tc-ac-573-003
+  - tc-ac-573-006
+  - tc-ac-573-008
+  - tc-ac-573-009
+  - tc-ac-573-010

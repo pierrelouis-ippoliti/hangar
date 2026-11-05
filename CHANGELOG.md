@@ -10,6 +10,7 @@ Added:
 
 - Environment settings, the pipeline configuration schema with `configs/pipelines/v0.yaml`, and the configuration hash (#9).
 - Validation of the corpus manifest, and a loader that returns the active documents of a snapshot (#12).
+- The C1 corpus manifest with 18 documents, the list in `configs/corpus/c1.yaml`, and a record of how the scope rule was applied (#11).
 
 ### 0.0.0a0 · M0 Repository and tooling (2026-11-04)
 

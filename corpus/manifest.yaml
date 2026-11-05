@@ -1,0 +1,296 @@
+# The corpus manifest: every document of snapshot C1, where to download it,
+# and the SHA-256 the downloaded file must have. The documents themselves are
+# never committed. How the scope rule was applied, and how each date was
+# read, is recorded in corpus/c1-scope.md.
+snapshot: c1
+documents:
+  - id: faa-h-8083-30b
+    title: "FAA-H-8083-30B, Aviation Maintenance Technician Handbook – General"
+    authority: FAA
+    type: handbook
+    language: en
+    source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amtg_handbook.pdf
+    format: pdf
+    edition: "B (2023)"
+    content_date: 2023-07-21
+    page_modified_date: 2023-07-27
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "0a39c01bbc454e77a49813cf27e2ef291756fa7111d9308bc290cd0eb71616fd"
+    reuse_note: "A work of the United States Government, in the public domain in the United States (17 U.S.C. 105). Hangar does not redistribute the file."
+
+  - id: faa-h-8083-31b
+    title: "FAA-H-8083-31B, Aviation Maintenance Technician Handbook – Airframe"
+    authority: FAA
+    type: handbook
+    language: en
+    source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/FAA-H-8083-31B_Aviation_Maintenance_Technician_Handbook.pdf
+    format: pdf
+    edition: "B (2023)"
+    content_date: 2023-07-18
+    page_modified_date: 2023-07-21
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "e5adb2696b545344b42bf7bf93c113ea94ff1456e8f8f772a6b6b02e243c4f13"
+    reuse_note: "A work of the United States Government, in the public domain in the United States (17 U.S.C. 105). Hangar does not redistribute the file."
+
+  - id: faa-h-8083-32b
+    title: "FAA-H-8083-32B, Aviation Maintenance Technician Handbook – Powerplant"
+    authority: FAA
+    type: handbook
+    language: en
+    source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amt_powerplant_handbook.pdf
+    format: pdf
+    edition: "B (2023)"
+    content_date: 2023-05-09
+    page_modified_date: 2023-07-17
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "7fe4ee09e6593af9307df1d1088d93be39ffa3839ad376ed975c0c952a066eb2"
+    reuse_note: "A work of the United States Government, in the public domain in the United States (17 U.S.C. 105). Hangar does not redistribute the file."
+
+  # The whole regulations; the parser keeps Subparts 571 and 573.
+  # The content date is the consolidation date; the page date is the commit date.
+  - id: car-sor-96-433
+    title: "Canadian Aviation Regulations (SOR/96-433)"
+    authority: TC
+    type: regulation
+    language: en
+    source_url: https://raw.githubusercontent.com/justicecanada/laws-lois-xml/076f5b3c3dc9b0c62d72900496b3643d75e412c2/eng/regulations/SOR-96-433.xml
+    format: xml
+    edition: "consolidated to 2026-06-18"
+    content_date: 2026-06-18
+    page_modified_date: 2026-08-06
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "a6dde3fea04ff4289e8e4f49696427caa9ccb06386f2ef759b6780fd3b8d1026"
+    reuse_note: "Open Government Licence - Canada, as stated in the LICENSE.md of justicecanada/laws-lois-xml. Not the official version of the regulations. Hangar does not redistribute the file."
+
+  # The content date is the latest "(amended ...)" date in the text.
+  - id: tc-std-571
+    title: "Standard 571 – Maintenance"
+    authority: TC
+    type: standard
+    language: en
+    source_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-571-maintenance-canadian-aviation-regulations-cars
+    format: html
+    edition: "last amended 2010-12-30"
+    content_date: 2010-12-30
+    page_modified_date: 2024-12-04
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "9db676e6f9d01ced542b8ae0c7e7110079b57e2eb699affc0c1f929db4c50411"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  # The content date is the latest "(amended ...)" date in the text.
+  - id: tc-std-573
+    title: "Standard 573 – Approved Maintenance Organizations"
+    authority: TC
+    type: standard
+    language: en
+    source_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-573-approved-maintenance-organizations-canadian-aviation-regulations-cars
+    format: html
+    edition: "last amended 2022-12-07"
+    content_date: 2022-12-07
+    page_modified_date: 2024-10-02
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "57603f3aa03bf55ac1030bef49373f8466cac13bcb9a3ccb1c8b639b0cb0b8bd"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-002
+    title: "AC 571-002, Maintenance Implementation Procedures – Bilateral Aviation Safety Agreement Between Canada and United States"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-002
+    format: html
+    edition: "Issue 02"
+    content_date: 2019-05-01
+    page_modified_date: 2019-05-28
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "522f49655c8d81b0606d3ae84f4a2095e896586c9f37ef337543ca1c8aa60fff"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-004
+    title: "AC 571-004, Installation Eligibility of Substitute or Replacement Bearings"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-004
+    format: html
+    edition: "Issue 01"
+    content_date: 2009-08-26
+    page_modified_date: 2018-02-12
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "967dee10a1ea5bd60de40ee7d91540b0a839fe670e2aceab515478115fcece76"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  # Cancelled on 2024-11-15. The page now holds only the cancellation
+  # notice, which is what the hash and the content date describe.
+  - id: tc-ac-571-005
+    title: "AC 571-005, Major Repair After Substantial Damage"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-005
+    format: html
+    edition: "Issue 01"
+    content_date: 2024-11-15
+    page_modified_date: 2025-01-21
+    retrieved_on: 2026-11-04
+    status: cancelled
+    sha256: "5a3252d8a94c6791581eb594edce948659a109ad4b9f1c4b1bde2b84641a0708"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-006
+    title: "AC 571-006, Electronic Signatures and Electronic Exchange of the Authorized Release Certificate – Form One"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-006
+    format: html
+    edition: "Issue 01"
+    content_date: 2012-03-26
+    page_modified_date: 2018-05-18
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "b49325733093e175328111e44c6579800a9e73e9bb7319f4c365bebea9f0c66b"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-024
+    title: "AC 571-024, Documentation Required for the Installation of Parts onto Canadian Registered Aircraft"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-024
+    format: html
+    edition: "Issue 06"
+    content_date: 2024-06-13
+    page_modified_date: 2024-06-26
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "4fa0ff1af3196493f5bca718964c7c4d203a5b2ac1c647808edf7e762bc89755"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-025
+    title: "AC 571-025, Maintenance of Emergency Locator Transmitters (ELTs)"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-025
+    format: html
+    edition: "Issue 02"
+    content_date: 2020-03-09
+    page_modified_date: 2020-03-09
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "3d0886e4093d1e0c1833bfc26ae9c107657ec12f7ba19fa517d95f0160f2f77c"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-571-026
+    title: "AC 571-026, Parts Removed from an Aircraft No Longer in Service and Disposal of Scrapped Parts"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-026
+    format: html
+    edition: "Issue 01"
+    content_date: 2025-07-09
+    page_modified_date: 2025-10-06
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "4f5ebd2424f274a9831542e098c14fb5baf423371dad84c67c581e6ef25b3f1a"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-002
+    title: "AC 573-002, Aircraft Certification Authority Based on Foreign Qualifications"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-002
+    format: html
+    edition: "Issue 04"
+    content_date: 2025-12-31
+    page_modified_date: 2026-01-26
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "40e9284ec293b43c11c90f78f9ad4af9b63a790460a5c40ea1ba621ae217eda5"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-003
+    title: "AC 573-003, Trade Standards for Personnel Working in Approved Maintenance Organizations"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-003
+    format: html
+    edition: "Issue 02"
+    content_date: 2013-10-31
+    page_modified_date: 2018-05-18
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "24f589ea23c423851fd06795e4e458888f1fdb9624cae41e2d9f0a3216a0faad"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-006
+    title: "AC 573-006, Maintenance and Operations in Accordance with the Technical Arrangement – Maintenance Between Canada and the United Kingdom"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-006
+    format: html
+    edition: "Issue 02"
+    content_date: 2025-03-28
+    page_modified_date: 2025-04-04
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "25273df5c6604c4c3fc5db02462ca3f133ca956ff7ab1587147dc29fe744c825"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-008
+    title: "AC 573-008, Approved Maintenance Organization Certificate: Application and Amendment Procedures"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-008
+    format: html
+    edition: "Issue 01"
+    content_date: 2026-02-11
+    page_modified_date: 2026-02-13
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "fcabc7df14db217ef278c326ed9917f73f67ad9a6b68dc6de6e97caa70f213d1"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-009
+    title: "AC 573-009, Technical Arrangement – Maintenance Between Canada and Brazil"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-009
+    format: html
+    edition: "Issue 01"
+    content_date: 2024-02-14
+    page_modified_date: 2025-10-06
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "982513a58ac519e59a41fa4180e380b4408986493785638f99c80a3955e2fb5a"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
+
+  - id: tc-ac-573-010
+    title: "AC 573-010, Maintenance Annex Guidance – Bilateral Aviation Safety Agreement between Canada and the European Union"
+    authority: TC
+    type: advisory_circular
+    language: en
+    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-010
+    format: html
+    edition: "Issue 01"
+    content_date: 2024-11-15
+    page_modified_date: 2025-10-06
+    retrieved_on: 2026-11-04
+    status: active
+    sha256: "98559ff48d8bf6c491710ce1fdb5773bb228b2b202ee0ceaf0cdb457ccd004fd"
+    reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
