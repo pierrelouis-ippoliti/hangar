@@ -97,6 +97,7 @@ class Manifest(BaseModel):
     ) -> tuple[DocumentSpec, ...]:
         if not documents:
             raise ValueError("the manifest must list at least one document")
+
         return documents
 
     def active_documents(self) -> tuple[DocumentSpec, ...]:
@@ -134,19 +135,24 @@ def parse_manifest(data: object, source: str) -> Manifest:
                 )
             ],
         )
+
     try:
         manifest = Manifest.model_validate(data)
     except ValidationError as error:
         raise ConfigError(source, field_problems(error)) from error
+
     duplicates = _duplicate_ids(manifest.documents)
+
     if duplicates:
         raise ConfigError(source, duplicates)
+
     return manifest
 
 
 def _duplicate_ids(documents: tuple[DocumentSpec, ...]) -> list[FieldProblem]:
     first_position: dict[str, int] = {}
     problems = []
+
     for position, spec in enumerate(documents):
         if spec.id in first_position:
             problems.append(
@@ -158,4 +164,5 @@ def _duplicate_ids(documents: tuple[DocumentSpec, ...]) -> list[FieldProblem]:
             )
         else:
             first_position[spec.id] = position
+
     return problems

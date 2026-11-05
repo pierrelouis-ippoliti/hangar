@@ -25,10 +25,11 @@ make setup          # install Python 3.12, the locked dependencies and the git h
 make check          # lint, format check, types, import rules and tests, as CI runs them
 cp .env.example .env  # then fill in the values
 make qdrant-up      # start Qdrant on 127.0.0.1:6333
+uv run hangar doctor  # check Python, Qdrant, the API key, disk space and the model cache
 make qdrant-down    # stop it; its data is kept in a Docker volume
 ```
 
-The pipeline commands (`hangar fetch`, `hangar parse`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
+`hangar --help` lists one subcommand per stage. Only `doctor` works so far; the others (`hangar fetch`, `hangar parse`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
 
 ## Versions
 

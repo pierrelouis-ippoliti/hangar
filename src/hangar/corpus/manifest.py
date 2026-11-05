@@ -29,6 +29,7 @@ def load_snapshot(path: Path, snapshot: str) -> tuple[DocumentSpec, ...]:
     """
     source = str(path)
     manifest = parse_manifest(read_yaml(path), source)
+
     if manifest.snapshot != snapshot:
         raise ConfigError(
             source,
@@ -40,4 +41,5 @@ def load_snapshot(path: Path, snapshot: str) -> tuple[DocumentSpec, ...]:
                 )
             ],
         )
+
     return manifest.active_documents()

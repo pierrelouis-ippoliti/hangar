@@ -73,16 +73,19 @@ def field_problems(error: pydantic.ValidationError) -> list[FieldProblem]:
 def _describe(source: str, problem: FieldProblem) -> str:
     if problem.field is None:
         return f"{source}: {problem.message}"
+
     return f"{source}: {problem.field}: {problem.message}"
 
 
 def _field_path(location: tuple[int | str, ...]) -> str | None:
     path = ""
+
     for part in location:
         if isinstance(part, int):
             path += f"[{part}]"
         else:
             path += f".{part}" if path else part
+
     return path or None
 
 
@@ -91,4 +94,5 @@ def _message(detail: ErrorDetails) -> str:
     # pydantic reports as "Value error, <message>". Keep only the message.
     if detail["type"] == "value_error" and "ctx" in detail:
         return str(detail["ctx"]["error"])
+
     return detail["msg"]

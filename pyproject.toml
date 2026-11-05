@@ -37,9 +37,11 @@ target-version = "py312"
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "D"]
 # Docstrings put their summary on the line after the opening quotes,
-# so D213 replaces D212 (summary on the first line).
+# so D213 replaces D212 (summary on the first line). That holds for short
+# docstrings too, so D200 (one-line docstrings on one line) is off, and a
+# summary may end without a period (D415).
 extend-select = ["D213"]
-ignore = ["D212"]
+ignore = ["D212", "D200", "D415"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "google"
@@ -77,11 +79,13 @@ layers = [
 ]
 
 # The layers above would let cli reach every package; it may use only
-# pipelines and observability.
+# pipelines and observability. It reaches the rest through pipelines,
+# so only its own imports are checked.
 [[tool.importlinter.contracts]]
 name = "cli imports only pipelines and observability"
 type = "forbidden"
 source_modules = ["hangar.cli"]
+allow_indirect_imports = true
 forbidden_modules = [
     "hangar.core",
     "hangar.corpus",
