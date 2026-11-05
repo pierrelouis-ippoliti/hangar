@@ -91,6 +91,20 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
 - **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the rules that keep each adapter library inside its stage package and `pipelines` (#16, then #21, #22 and #25).
 
+## Commands and logs
+
+`hangar` has one subcommand per stage, plus `doctor`. Each takes `--config`, the pipeline file (`configs/pipelines/v0.yaml` by default). `cli` only parses the command line; `pipelines.commands` runs the command:
+
+1. It reads the environment settings and starts a run with its own ID, such as `20261105T142233Z-3fa91c`: the start time in UTC and six random hex characters.
+2. It reads the pipeline file and logs its path and configuration hash.
+3. It runs the command and returns the exit code: 0 on success, 1 on failure.
+
+Every record goes to two places: a JSON lines file, `<data folder>/logs/<run ID>.jsonl`, and the screen, as readable lines. Each record carries the run ID, the stage and the document being worked on. Code logs through the standard library (`logging.getLogger(__name__)`), and a `log_context` block in `observability.logs` supplies those three values, so the code that logs never passes them along.
+
+The Mistral API key is replaced by `[REDACTED]` before any record is written, in messages, arguments and tracebacks alike, and in records from other libraries too. Errors are logged rather than left to print their own traceback, so they go through the same redaction.
+
+`hangar doctor` checks Python 3.12 or later, Qdrant's `/readyz` endpoint, that `MISTRAL_API_KEY` is set (without calling the API), 2 GB of free space for the data folder, and that the pinned embedding model is in the Hugging Face cache or can be downloaded there. It reports each check as pass or fail, and exits with 1 if any fails.
+
 ## Stages
 
 ### Fetch
