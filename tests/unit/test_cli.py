@@ -208,6 +208,7 @@ def write_corpus(
                 "type": "handbook",
                 "language": "en",
                 "source_url": url,
+                "official_url": url,
                 "format": "pdf",
                 "edition": "B",
                 "content_date": "2023-01-01",

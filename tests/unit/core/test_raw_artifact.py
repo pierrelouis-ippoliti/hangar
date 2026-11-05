@@ -18,6 +18,7 @@ def spec(document_id: str, document_format: str) -> DocumentSpec:
             "type": "advisory_circular",
             "language": "en",
             "source_url": "https://example.org/page",
+            "official_url": "https://example.org/page",
             "format": document_format,
             "edition": "Issue 01",
             "content_date": "2024-01-01",

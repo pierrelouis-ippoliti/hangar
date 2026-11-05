@@ -43,7 +43,12 @@ class DocumentSpec(BaseModel):
         type: What kind of document it is.
         language: The language of the text, as a two-letter code such as
             ``en``.
-        source_url: Where the document is downloaded from.
+        source_url: Where the fetch stage downloads the document from: the
+            official file, or, for a page whose bytes change from one
+            download to the next, a fixed Wayback Machine snapshot of it.
+        official_url: The document's official address, the one cited to
+            readers. It is the same as ``source_url`` when that is the
+            official file.
         format: The file format, which decides the parser.
         edition: The edition or revision, such as ``B`` or ``2023``.
         content_date: When the content itself was issued or consolidated.
@@ -67,6 +72,7 @@ class DocumentSpec(BaseModel):
     type: DocumentType
     language: str = Field(pattern=r"^[a-z]{2}$")
     source_url: HttpUrl
+    official_url: HttpUrl
     format: DocumentFormat
     edition: str = Field(min_length=1)
     content_date: datetime.date

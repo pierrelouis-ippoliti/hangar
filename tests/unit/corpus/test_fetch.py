@@ -21,6 +21,7 @@ def spec(document_id: str, document_format: str, content: bytes) -> DocumentSpec
             "type": "handbook",
             "language": "en",
             "source_url": f"https://example.org/{document_id}",
+            "official_url": f"https://example.org/{document_id}",
             "format": document_format,
             "edition": "B",
             "content_date": "2023-01-01",

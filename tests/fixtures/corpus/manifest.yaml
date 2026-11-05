@@ -8,6 +8,7 @@ documents:
     type: handbook
     language: en
     source_url: https://example.org/example-handbook.pdf
+    official_url: https://example.org/example-handbook.pdf
     format: pdf
     edition: B
     content_date: 2023-01-01
@@ -23,6 +24,7 @@ documents:
     type: regulation
     language: en
     source_url: https://example.org/example-regulation.xml
+    official_url: https://example.org/example-regulation.xml
     format: xml
     edition: 2026
     content_date: 2026-06-18
@@ -38,6 +40,7 @@ documents:
     type: advisory_circular
     language: en
     source_url: https://example.org/example-ac-cancelled.html
+    official_url: https://example.org/example-ac-cancelled.html
     format: html
     edition: "1"
     content_date: 2005-03-01
@@ -53,6 +56,7 @@ documents:
     type: standard
     language: en
     source_url: https://example.org/example-standard.html
+    official_url: https://example.org/example-standard.html
     format: html
     edition: "2010"
     content_date: 2010-01-01
