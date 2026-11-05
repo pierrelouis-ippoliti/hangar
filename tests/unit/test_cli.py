@@ -44,8 +44,13 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+def run_logs(workspace: Path) -> list[Path]:
+    # A run log is named after its run ID, such as 20261105T114319Z-7e7595.
+    return list((workspace / "data" / "logs").glob("*T*Z-*.jsonl"))
+
+
 def log_records(workspace: Path) -> list[dict[str, Any]]:
-    (log_file,) = (workspace / "data" / "logs").glob("*.jsonl")
+    (log_file,) = run_logs(workspace)
     return [json.loads(line) for line in log_file.read_text().splitlines()]
 
 
@@ -163,7 +168,7 @@ def test_api_key_never_reaches_the_screen_or_the_log_file(
 
     main(["doctor", "--config", str(V0_CONFIG)])
 
-    (log_file,) = (workspace / "data" / "logs").glob("*.jsonl")
+    (log_file,) = run_logs(workspace)
     assert FAKE_KEY not in log_file.read_text()
     assert FAKE_KEY not in capsys.readouterr().err
 
@@ -244,12 +249,12 @@ def test_fetch_downloads_every_document_then_nothing_on_a_second_run(
     assert sorted(p.name for p in (workspace / "data" / "raw").iterdir()) == [
         "doc-one.pdf",
         "doc-two.pdf",
-        "fetch-log.jsonl",
     ]
+    assert (workspace / "data" / "logs" / "fetch-log.jsonl").is_file()
     assert {r["document_id"] for r in log_records(workspace)} >= {"doc-one", "doc-two"}
 
     downloader.downloaded.clear()
-    for log_file in (workspace / "data" / "logs").glob("*.jsonl"):
+    for log_file in run_logs(workspace):
         log_file.unlink()
 
     assert main(["fetch", "--config", str(config)]) == 0

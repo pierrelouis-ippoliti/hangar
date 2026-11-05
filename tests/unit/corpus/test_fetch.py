@@ -6,7 +6,7 @@ import pytest
 
 from hangar.core.corpus import DocumentSpec, RawArtifact
 from hangar.corpus.download import LocalCopyDownloader
-from hangar.corpus.fetch import FETCH_LOG, FetchError, fetch_documents
+from hangar.corpus.fetch import FetchError, fetch_documents
 
 FETCHED_AT = datetime.datetime(2026, 11, 5, 9, 30, tzinfo=datetime.UTC)
 WRONG_SHA256 = "f" * 64
@@ -56,8 +56,8 @@ def corpus(tmp_path: Path) -> tuple[list[DocumentSpec], LocalCopyDownloader]:
     return documents, LocalCopyDownloader(files)
 
 
-def fetch_log(raw_dir: Path) -> list[RawArtifact]:
-    lines = (raw_dir / FETCH_LOG).read_text().splitlines()
+def fetch_log(path: Path) -> list[RawArtifact]:
+    lines = path.read_text().splitlines()
 
     return [RawArtifact.model_validate_json(line) for line in lines]
 
@@ -67,14 +67,16 @@ def test_every_document_is_downloaded_under_its_artifact_id(
 ) -> None:
     documents, downloader = corpus
     raw_dir = tmp_path / "data" / "raw"
+    log = tmp_path / "logs" / "fetch-log.jsonl"
 
-    summary = fetch_documents(documents, raw_dir, downloader, now=lambda: FETCHED_AT)
+    summary = fetch_documents(
+        documents, raw_dir, log, downloader, now=lambda: FETCHED_AT
+    )
 
     assert sorted(p.name for p in raw_dir.iterdir()) == [
         "example-circular.html",
         "example-handbook.pdf",
         "example-regulation.xml",
-        FETCH_LOG,
     ]
     assert summary.downloaded == (
         "example-handbook",
@@ -89,10 +91,11 @@ def test_each_download_is_recorded_in_the_fetch_log(
 ) -> None:
     documents, downloader = corpus
     raw_dir = tmp_path / "raw"
+    log = tmp_path / "logs" / "fetch-log.jsonl"
 
-    fetch_documents(documents, raw_dir, downloader, now=lambda: FETCHED_AT)
+    fetch_documents(documents, raw_dir, log, downloader, now=lambda: FETCHED_AT)
 
-    records = fetch_log(raw_dir)
+    records = fetch_log(log)
     assert [r.document_id for r in records] == [d.id for d in documents]
     first = records[0]
     assert first.id == "example-handbook.pdf"
@@ -107,16 +110,17 @@ def test_second_run_downloads_nothing(
 ) -> None:
     documents, downloader = corpus
     raw_dir = tmp_path / "raw"
-    fetch_documents(documents, raw_dir, downloader)
-    log_before = (raw_dir / FETCH_LOG).read_text()
+    log = tmp_path / "logs" / "fetch-log.jsonl"
+    fetch_documents(documents, raw_dir, log, downloader)
+    log_before = log.read_text()
     downloader.downloaded.clear()
 
-    summary = fetch_documents(documents, raw_dir, downloader)
+    summary = fetch_documents(documents, raw_dir, log, downloader)
 
     assert downloader.downloaded == []
     assert summary.downloaded == ()
     assert summary.already_present == tuple(d.id for d in documents)
-    assert (raw_dir / FETCH_LOG).read_text() == log_before
+    assert log.read_text() == log_before
 
 
 def test_file_present_with_the_wrong_hash_is_downloaded_again(
@@ -124,10 +128,11 @@ def test_file_present_with_the_wrong_hash_is_downloaded_again(
 ) -> None:
     documents, downloader = corpus
     raw_dir = tmp_path / "raw"
+    log = tmp_path / "logs" / "fetch-log.jsonl"
     raw_dir.mkdir()
     (raw_dir / "example-handbook.pdf").write_bytes(b"truncated")
 
-    summary = fetch_documents(documents[:1], raw_dir, downloader)
+    summary = fetch_documents(documents[:1], raw_dir, log, downloader)
 
     assert summary.downloaded == ("example-handbook",)
     assert (raw_dir / "example-handbook.pdf").read_bytes() == b"%PDF-fake handbook"
@@ -139,9 +144,10 @@ def test_hash_mismatch_stops_the_run_with_an_error_naming_the_document(
     documents, downloader = corpus
     documents[1] = documents[1].model_copy(update={"sha256": WRONG_SHA256})
     raw_dir = tmp_path / "raw"
+    log = tmp_path / "logs" / "fetch-log.jsonl"
 
     with pytest.raises(FetchError) as error_info:
-        fetch_documents(documents, raw_dir, downloader)
+        fetch_documents(documents, raw_dir, log, downloader)
 
     message = str(error_info.value)
     assert message.startswith("example-regulation:")
@@ -155,9 +161,8 @@ def test_hash_mismatch_stops_the_run_with_an_error_naming_the_document(
     # The bad file is not kept, and only the good download is recorded.
     assert sorted(p.name for p in raw_dir.iterdir()) == [
         "example-handbook.pdf",
-        FETCH_LOG,
     ]
-    assert [r.document_id for r in fetch_log(raw_dir)] == ["example-handbook"]
+    assert [r.document_id for r in fetch_log(log)] == ["example-handbook"]
 
 
 def test_download_failure_stops_the_run_with_an_error_naming_the_document(
@@ -165,9 +170,10 @@ def test_download_failure_stops_the_run_with_an_error_naming_the_document(
 ) -> None:
     documents, _ = corpus
     raw_dir = tmp_path / "raw"
+    log = tmp_path / "logs" / "fetch-log.jsonl"
 
     with pytest.raises(FetchError) as error_info:
-        fetch_documents(documents, raw_dir, LocalCopyDownloader({}))
+        fetch_documents(documents, raw_dir, log, LocalCopyDownloader({}))
 
     assert str(error_info.value).startswith("example-handbook:")
     assert list(raw_dir.iterdir()) == []

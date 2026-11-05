@@ -4,7 +4,8 @@ The fetch stage: download each document of a snapshot and check its hash.
 Files go to the raw folder under their artifact ID, such as
 ``faa-h-8083-31b.pdf``. A file already there with the right hash is kept, so
 a second run downloads nothing. Each download is added to the fetch log,
-``fetch-log.jsonl`` in the same folder, one raw artifact record per line.
+one raw artifact record per line. The log lives outside the raw folder, so
+the folder holds only the documents and hashes the same on every machine.
 """
 
 import logging
@@ -18,8 +19,6 @@ from hangar.core.corpus import DocumentSpec, RawArtifact, raw_artifact_id
 from hangar.core.errors import HangarError
 from hangar.corpus.download import Downloader, DownloadError, file_sha256
 from hangar.observability.logs import log_context
-
-FETCH_LOG = "fetch-log.jsonl"
 
 logger = logging.getLogger(__name__)
 
@@ -46,6 +45,7 @@ class FetchSummary:
 def fetch_documents(
     documents: Sequence[DocumentSpec],
     raw_dir: Path,
+    fetch_log: Path,
     downloader: Downloader,
     *,
     now: Callable[[], datetime] = lambda: datetime.now(UTC),
@@ -59,6 +59,8 @@ def fetch_documents(
     Args:
         documents: The documents to fetch, from the manifest.
         raw_dir: The raw folder. It is created if needed.
+        fetch_log: The JSON lines file each download is added to. It and
+            its folder are created if needed.
         downloader: What downloads each file.
         now: Gives the current time, recorded as each file's fetch time.
 
@@ -70,11 +72,12 @@ def fetch_documents(
             from the manifest's. The message starts with the document ID.
     """
     raw_dir.mkdir(parents=True, exist_ok=True)
+    fetch_log.parent.mkdir(parents=True, exist_ok=True)
     downloaded, already_present = [], []
 
     for document in documents:
         with log_context(document_id=document.id):
-            if _fetch_one(document, raw_dir, downloader, now):
+            if _fetch_one(document, raw_dir, fetch_log, downloader, now):
                 downloaded.append(document.id)
             else:
                 already_present.append(document.id)
@@ -85,6 +88,7 @@ def fetch_documents(
 def _fetch_one(
     document: DocumentSpec,
     raw_dir: Path,
+    fetch_log: Path,
     downloader: Downloader,
     now: Callable[[], datetime],
 ) -> bool:
@@ -128,8 +132,8 @@ def _fetch_one(
         last_modified=download.last_modified,
     )
 
-    with (raw_dir / FETCH_LOG).open("a", encoding="utf-8") as fetch_log:
-        fetch_log.write(record.model_dump_json() + "\n")
+    with fetch_log.open("a", encoding="utf-8") as log:
+        log.write(record.model_dump_json() + "\n")
 
     logger.info("downloaded %s, %d bytes", target, download.size_bytes)
 
