@@ -78,8 +78,10 @@ def check_python(version: tuple[int, ...]) -> CheckResult:
         A pass from Python 3.12 on.
     """
     shown = ".".join(str(part) for part in version)
+
     if version >= MINIMUM_PYTHON:
         return CheckResult("Python", True, shown)
+
     return CheckResult("Python", False, f"{shown}, but Hangar needs 3.12 or later")
 
 
@@ -96,6 +98,7 @@ def check_qdrant(url: str) -> CheckResult:
     """
     ready_url = url.rstrip("/") + "/readyz"
     shown = _without_credentials(url)
+
     try:
         with urllib.request.urlopen(ready_url, timeout=QDRANT_TIMEOUT_SECONDS):
             pass
@@ -110,6 +113,7 @@ def check_qdrant(url: str) -> CheckResult:
             False,
             f"no answer from {shown} ({reason}). Start it with `make qdrant-up`.",
         )
+
     return CheckResult("Qdrant", True, f"ready at {shown}")
 
 
@@ -128,6 +132,7 @@ def check_api_key(key: SecretStr | None) -> CheckResult:
         return CheckResult(
             "API key", False, "MISTRAL_API_KEY is not set. Add it to .env."
         )
+
     return CheckResult("API key", True, "MISTRAL_API_KEY is set")
 
 
@@ -147,8 +152,10 @@ def check_disk_space(
     """
     free = shutil.disk_usage(_nearest_existing(folder)).free
     found = f"{_gigabytes(free)} free for {folder}"
+
     if free >= minimum_bytes:
         return CheckResult("Disk space", True, found)
+
     return CheckResult(
         "Disk space", False, f"{found}, but {_gigabytes(minimum_bytes)} are needed"
     )
@@ -170,9 +177,12 @@ def check_model_cache(hf_home: Path | None, model: str, revision: str) -> CheckR
     hub = (hf_home or _default_hf_home()) / "hub"
     pinned = f"{model} at {revision[:7]}"
     snapshot = hub / f"models--{model.replace('/', '--')}" / "snapshots" / revision
+
     if snapshot.is_dir():
         return CheckResult("Model cache", True, f"{pinned} is in {hub}")
+
     writable = _nearest_existing(hub)
+
     if writable.is_dir() and os.access(writable, os.W_OK):
         return CheckResult(
             "Model cache",
@@ -180,6 +190,7 @@ def check_model_cache(hf_home: Path | None, model: str, revision: str) -> CheckR
             f"{pinned} is not downloaded yet; the embed stage will download it"
             f" into {hub}",
         )
+
     return CheckResult(
         "Model cache", False, f"can't write to {hub}, where {pinned} would go"
     )
@@ -188,6 +199,7 @@ def check_model_cache(hf_home: Path | None, model: str, revision: str) -> CheckR
 def _without_credentials(url: str) -> str:
     # Drop "user:password@" from the address, keeping the host and port.
     parts = urllib.parse.urlsplit(url)
+
     return urllib.parse.urlunsplit(
         parts._replace(netloc=parts.netloc.rpartition("@")[2])
     )
@@ -196,13 +208,16 @@ def _without_credentials(url: str) -> str:
 def _default_hf_home() -> Path:
     # The default that huggingface_hub uses when HF_HOME is not set.
     cache = os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache"
+
     return Path(cache) / "huggingface"
 
 
 def _nearest_existing(path: Path) -> Path:
     path = path.absolute()
+
     while not path.exists():
         path = path.parent
+
     return path
 
 

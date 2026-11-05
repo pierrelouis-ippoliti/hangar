@@ -68,11 +68,13 @@ def log_context(
         Nothing. The values apply until the block ends.
     """
     values = ((_run_id, run_id), (_stage, stage), (_document_id, document_id))
+
     tokens: list[tuple[ContextVar[str | None], Token[str | None]]] = [
         (variable, variable.set(value))
         for variable, value in values
         if value is not None
     ]
+
     try:
         yield
     finally:
@@ -102,28 +104,37 @@ def configure_logging(
             Empty values are ignored.
     """
     close_logging()
+
     log_file.parent.mkdir(parents=True, exist_ok=True)
 
     file_handler = logging.FileHandler(log_file, encoding="utf-8")
     file_handler.setFormatter(_JsonLinesFormatter())
+
     console_handler = logging.StreamHandler(console or sys.stderr)
     console_handler.setFormatter(_ReadableFormatter())
 
     redactor = _SecretRedactor(secrets)
     root = logging.getLogger()
+
     for name, handler in (("file", file_handler), ("console", console_handler)):
         handler.set_name(_HANDLER_PREFIX + name)
+
         # Filters on a handler see every record it receives, including those
         # from child loggers; filters on the root logger would not.
         handler.addFilter(_ContextFilter())
         handler.addFilter(redactor)
+
         root.addHandler(handler)
+
     root.setLevel(level)
 
 
 def close_logging() -> None:
-    """Remove and close the handlers installed by ``configure_logging``."""
+    """
+    Remove and close the handlers installed by ``configure_logging``.
+    """
     root = logging.getLogger()
+
     for handler in list(root.handlers):
         if (handler.get_name() or "").startswith(_HANDLER_PREFIX):
             root.removeHandler(handler)
@@ -131,7 +142,9 @@ def close_logging() -> None:
 
 
 class _ContextFilter(logging.Filter):
-    """Copy the run ID, stage and document ID of the current block onto a record."""
+    """
+    Copy the run ID, stage and document ID of the current block onto a record
+    """
 
     def filter(self, record: logging.LogRecord) -> bool:
         for name, variable in (
@@ -145,7 +158,9 @@ class _ContextFilter(logging.Filter):
 
 
 class _SecretRedactor(logging.Filter):
-    """Replace each secret in a record's message, traceback and stack with REDACTED."""
+    """
+    Replace each secret in a record's message, traceback and stack with REDACTED
+    """
 
     def __init__(self, secrets: Iterable[str]) -> None:
         super().__init__()
@@ -156,26 +171,34 @@ class _SecretRedactor(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         if not self._secrets:
             return True
+
         # Merge the arguments into the message first: a secret is often
         # passed as an argument, as in log.info("key %s", key).
         record.msg = self._redact(record.getMessage())
         record.args = None
+
         if record.exc_info and not record.exc_text:
             record.exc_text = self._formatter.formatException(record.exc_info)
+
         if record.exc_text:
             record.exc_text = self._redact(record.exc_text)
+
         if record.stack_info:
             record.stack_info = self._redact(record.stack_info)
+
         return True
 
     def _redact(self, text: str) -> str:
         for secret in self._secrets:
             text = text.replace(secret, REDACTED)
+
         return text
 
 
 class _JsonLinesFormatter(logging.Formatter):
-    """Write a record as one JSON object on one line."""
+    """
+    Write a record as one JSON object on one line
+    """
 
     def format(self, record: logging.LogRecord) -> str:
         entry: dict[str, object] = {
@@ -187,14 +210,19 @@ class _JsonLinesFormatter(logging.Formatter):
             "document_id": getattr(record, "document_id", None),
             "message": record.getMessage(),
         }
+
         details = _exception_and_stack(self, record)
+
         if details:
             entry["exception"] = details
+
         return json.dumps(entry, ensure_ascii=False)
 
 
 class _ReadableFormatter(logging.Formatter):
-    """Write a record as ``time level stage document message``, skipping empty parts."""
+    """
+    Write a record as ``time level stage document message``, skipping empty parts
+    """
 
     def format(self, record: logging.LogRecord) -> str:
         parts = [
@@ -204,8 +232,10 @@ class _ReadableFormatter(logging.Formatter):
             getattr(record, "document_id", None),
             record.getMessage(),
         ]
+
         line = " ".join(part for part in parts if part)
         details = _exception_and_stack(self, record)
+
         return f"{line}\n{details}" if details else line
 
 
@@ -216,4 +246,5 @@ def _exception_and_stack(
     # record so that a second handler reuses it.
     if record.exc_info and not record.exc_text:
         record.exc_text = formatter.formatException(record.exc_info)
+
     return "\n".join(part for part in (record.exc_text, record.stack_info) if part)

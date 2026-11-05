@@ -37,6 +37,7 @@ def _check_commit_hash(value: str) -> str:
         raise ValueError(
             f"must be a 40-character commit hash, not a branch or tag: {value!r}"
         )
+
     return value
 
 
@@ -46,6 +47,7 @@ def _check_dated_model_id(value: str) -> str:
             "must be a dated model ID, such as mistral-small-2603, "
             f"not the alias {value!r}"
         )
+
     return value
 
 
@@ -315,6 +317,7 @@ class PipelineConfig(ConfigSection):
             raise ValueError(
                 f"generation.model {self.generation.model!r} has no entry in prices"
             )
+
         return self
 
 
@@ -337,6 +340,7 @@ def parse_pipeline_config(data: object, source: str) -> PipelineConfig:
         raise ConfigError(
             source, [FieldProblem(None, "the file must be a mapping of sections")]
         )
+
     try:
         return PipelineConfig.model_validate(data)
     except ValidationError as error:
@@ -362,4 +366,5 @@ def config_hash(config: PipelineConfig) -> str:
     canonical = json.dumps(
         resolved, sort_keys=True, separators=(",", ":"), ensure_ascii=False
     )
+
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()

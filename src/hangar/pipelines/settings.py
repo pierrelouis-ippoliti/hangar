@@ -77,6 +77,7 @@ def load_settings(env_file: Path | None = Path(".env")) -> Settings:
             name. The error names the variable.
     """
     source = "the environment" if env_file is None else f"{env_file} or the environment"
+
     try:
         return Settings(_env_file=env_file)
     except ValidationError as error:

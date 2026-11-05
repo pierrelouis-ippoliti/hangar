@@ -38,21 +38,27 @@ def build_parser() -> argparse.ArgumentParser:
         prog="hangar",
         description="Hangar - cited answers from aircraft maintenance documents.",
     )
+
     parser.add_argument(
         "--version",
         action="version",
         version=f"hangar {version('hangar')}",
     )
+
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
+
     for name, summary in COMMANDS.items():
         _add_command(commands, name, summary)
 
     seed = commands.add_parser("seed", help="run or summarize the seed questions")
+
     seed_commands = seed.add_subparsers(
         dest="seed_command", required=True, metavar="command"
     )
+
     for name, summary in SEED_COMMANDS.items():
         _add_command(seed_commands, name, summary)
+
     return parser
 
 
@@ -68,9 +74,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         The exit code: 0 on success, 1 when the command fails.
     """
     args = build_parser().parse_args(argv)
+
     command = args.command
+
     if command == "seed":
         command = f"seed {args.seed_command}"
+
     return run_command(command, args.config)
 
 
@@ -80,6 +89,7 @@ def _add_command(
     summary: str,
 ) -> None:
     command = commands.add_parser(name, help=summary, description=summary)
+
     command.add_argument(
         "--config",
         type=Path,

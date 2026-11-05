@@ -27,12 +27,14 @@ def read_yaml(path: Path) -> object:
             error names the file.
     """
     source = str(path)
+
     try:
         text = path.read_text(encoding="utf-8")
     except OSError as error:
         raise ConfigError(
             source, [FieldProblem(None, f"can't read the file: {error.strerror}")]
         ) from error
+
     try:
         return yaml.safe_load(text)
     except yaml.YAMLError as error:

@@ -51,16 +51,19 @@ def run_command(command: str, config_path: Path) -> int:
     run_id = new_run_id()
     log_file = settings.data_dir / "logs" / f"{run_id}.jsonl"
     key = settings.mistral_api_key
+
     configure_logging(
         settings.log_level,
         log_file,
         secrets=[key.get_secret_value()] if key else [],
     )
+
     with log_context(run_id=run_id, stage=command):
         try:
             logger.info("run ID %s, logging to %s", run_id, log_file)
             config = load_pipeline_config(config_path)
             logger.info("read %s, config hash %s", config_path, config_hash(config))
+
             return _run(command, settings, config)
         except HangarError as error:
             logger.error("%s", error)
@@ -75,12 +78,15 @@ def run_command(command: str, config_path: Path) -> int:
 def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
     if command == "doctor":
         return _doctor(settings, config)
+
     logger.error("hangar %s is not built yet", command)
+
     return 1
 
 
 def _doctor(settings: Settings, config: PipelineConfig) -> int:
     results = run_checks(settings, config)
+
     for result in results:
         if result.passed:
             logger.info("pass  %s: %s", result.name, result.detail)
@@ -88,10 +94,13 @@ def _doctor(settings: Settings, config: PipelineConfig) -> int:
             logger.error("fail  %s: %s", result.name, result.detail)
 
     failed = [result.name for result in results if not result.passed]
+
     if failed:
         logger.error(
             "%d of %d checks failed: %s", len(failed), len(results), ", ".join(failed)
         )
         return 1
+
     logger.info("all %d checks passed", len(results))
+
     return 0
