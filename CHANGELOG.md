@@ -13,6 +13,7 @@ Added:
 - The C1 corpus manifest with 18 documents, the list in `configs/corpus/c1.yaml`, and a record of how the scope rule was applied (#11).
 - One `hangar` subcommand per stage, structured logs that carry the run ID, stage and document and redact the API key, and `hangar doctor` (#10).
 - `hangar fetch` and its DVC stage: the downloader, the hash checks and the fetch log. The Transport Canada pages now come from fixed Wayback Machine snapshots, and each manifest entry gains an `official_url` for citations (#13).
+- `NOTICE.md` with each source's reuse terms and attribution, the C1 data card draft, and ADR-0003 on licences (#14).
 
 ### 0.0.0a0 · M0 Repository and tooling (2026-11-04)
 
