@@ -19,6 +19,7 @@ def document(**changes: Any) -> dict[str, Any]:
         "type": "handbook",
         "language": "en",
         "source_url": "https://example.org/example-handbook.pdf",
+        "official_url": "https://example.org/handbooks",
         "format": "pdf",
         "edition": "B",
         "content_date": datetime.date(2023, 1, 1),
@@ -52,6 +53,7 @@ def test_valid_manifest_gives_typed_document_specs() -> None:
     assert spec.authority == "FAA"
     assert spec.type == "handbook"
     assert str(spec.source_url) == "https://example.org/example-handbook.pdf"
+    assert str(spec.official_url) == "https://example.org/handbooks"
     assert spec.content_date == datetime.date(2023, 1, 1)
     assert spec.page_modified_date == datetime.date(2024, 6, 1)
     assert spec.sha256 == FAKE_SHA256
@@ -108,6 +110,7 @@ def test_advisory_circular_html_document_is_accepted() -> None:
         ("type", "manual"),
         ("language", "english"),
         ("source_url", "not a url"),
+        ("official_url", "not a url"),
         ("format", "docx"),
         ("edition", ""),
         ("content_date", "1 January 2023"),
@@ -135,6 +138,7 @@ def test_invalid_value_error_names_the_document_field(field: str, value: Any) ->
         "type",
         "language",
         "source_url",
+        "official_url",
         "format",
         "edition",
         "content_date",

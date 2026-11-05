@@ -2,6 +2,12 @@
 # and the SHA-256 the downloaded file must have. The documents themselves are
 # never committed. How the scope rule was applied, and how each date was
 # read, is recorded in corpus/c1-scope.md.
+#
+# source_url is where `hangar fetch` downloads a document; official_url is
+# the address cited to readers. Transport Canada pages come from a fixed
+# Wayback Machine snapshot, in raw mode (id_), because the live pages'
+# bytes change whenever the site rebuilds its cache, even when the text
+# doesn't.
 snapshot: c1
 documents:
   - id: faa-h-8083-30b
@@ -10,6 +16,7 @@ documents:
     type: handbook
     language: en
     source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amtg_handbook.pdf
+    official_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amtg_handbook.pdf
     format: pdf
     edition: "B (2023)"
     content_date: 2023-07-21
@@ -25,6 +32,7 @@ documents:
     type: handbook
     language: en
     source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/FAA-H-8083-31B_Aviation_Maintenance_Technician_Handbook.pdf
+    official_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/FAA-H-8083-31B_Aviation_Maintenance_Technician_Handbook.pdf
     format: pdf
     edition: "B (2023)"
     content_date: 2023-07-18
@@ -40,6 +48,7 @@ documents:
     type: handbook
     language: en
     source_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amt_powerplant_handbook.pdf
+    official_url: https://www.faa.gov/regulations_policies/handbooks_manuals/aviation/amt_powerplant_handbook.pdf
     format: pdf
     edition: "B (2023)"
     content_date: 2023-05-09
@@ -57,6 +66,7 @@ documents:
     type: regulation
     language: en
     source_url: https://raw.githubusercontent.com/justicecanada/laws-lois-xml/076f5b3c3dc9b0c62d72900496b3643d75e412c2/eng/regulations/SOR-96-433.xml
+    official_url: https://laws-lois.justice.gc.ca/eng/regulations/SOR-96-433/
     format: xml
     edition: "consolidated to 2026-06-18"
     content_date: 2026-06-18
@@ -72,14 +82,15 @@ documents:
     authority: TC
     type: standard
     language: en
-    source_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-571-maintenance-canadian-aviation-regulations-cars
+    source_url: https://web.archive.org/web/20260813074815id_/https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-571-maintenance-canadian-aviation-regulations-cars
+    official_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-571-maintenance-canadian-aviation-regulations-cars
     format: html
     edition: "last amended 2010-12-30"
     content_date: 2010-12-30
     page_modified_date: 2024-12-04
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "9db676e6f9d01ced542b8ae0c7e7110079b57e2eb699affc0c1f929db4c50411"
+    sha256: "ba97995f38b144513eadff3c6c01ad878fcd3c03baf79e475d2f60772b5010f5"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   # The content date is the latest "(amended ...)" date in the text.
@@ -88,14 +99,15 @@ documents:
     authority: TC
     type: standard
     language: en
-    source_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-573-approved-maintenance-organizations-canadian-aviation-regulations-cars
+    source_url: https://web.archive.org/web/20260716223624id_/https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-573-approved-maintenance-organizations-canadian-aviation-regulations-cars
+    official_url: https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-573-approved-maintenance-organizations-canadian-aviation-regulations-cars
     format: html
     edition: "last amended 2022-12-07"
     content_date: 2022-12-07
     page_modified_date: 2024-10-02
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "57603f3aa03bf55ac1030bef49373f8466cac13bcb9a3ccb1c8b639b0cb0b8bd"
+    sha256: "611445420081bf69f8bd27ac6f18924b3b28870f0aa62b1b0eac7f012c68f249"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-002
@@ -103,14 +115,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-002
+    source_url: https://web.archive.org/web/20260517061624id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-002
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-002
     format: html
     edition: "Issue 02"
     content_date: 2019-05-01
     page_modified_date: 2019-05-28
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "522f49655c8d81b0606d3ae84f4a2095e896586c9f37ef337543ca1c8aa60fff"
+    sha256: "8999b229fd0d5f11c07de8cc50748c607dedff5da877f52a019a54dd9dfba2ca"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-004
@@ -118,14 +131,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-004
+    source_url: https://web.archive.org/web/20260422110441id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-004
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-004
     format: html
     edition: "Issue 01"
     content_date: 2009-08-26
     page_modified_date: 2018-02-12
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "967dee10a1ea5bd60de40ee7d91540b0a839fe670e2aceab515478115fcece76"
+    sha256: "cdbad5104cf129b2d18b2d22426c74cda03eb38420c8d76f4bbae6dbb0e8139e"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   # Cancelled on 2024-11-15. The page now holds only the cancellation
@@ -135,14 +149,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-005
+    source_url: https://web.archive.org/web/20251216075252id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-005
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-005
     format: html
     edition: "Issue 01"
     content_date: 2024-11-15
     page_modified_date: 2025-01-21
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: cancelled
-    sha256: "5a3252d8a94c6791581eb594edce948659a109ad4b9f1c4b1bde2b84641a0708"
+    sha256: "36bb52905469a4d8bdf17328aea752b164fe30fd4b3a82134ae32a680cde0edc"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-006
@@ -150,14 +165,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-006
+    source_url: https://web.archive.org/web/20260417185056id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-006
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-006
     format: html
     edition: "Issue 01"
     content_date: 2012-03-26
     page_modified_date: 2018-05-18
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "b49325733093e175328111e44c6579800a9e73e9bb7319f4c365bebea9f0c66b"
+    sha256: "e8a3e4d8d55689732485372b67cde75141dece8deb0ee80e25cb085b3d53f84a"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-024
@@ -165,14 +181,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-024
+    source_url: https://web.archive.org/web/20260311231806id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-024
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-024
     format: html
     edition: "Issue 06"
     content_date: 2024-06-13
     page_modified_date: 2024-06-26
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "4fa0ff1af3196493f5bca718964c7c4d203a5b2ac1c647808edf7e762bc89755"
+    sha256: "4f271cf7be189bb2b26e857a1952eee40d3618e1763e30837bac1462ad442475"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-025
@@ -180,14 +197,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-025
+    source_url: https://web.archive.org/web/20260712185825id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-025
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-025
     format: html
     edition: "Issue 02"
     content_date: 2020-03-09
     page_modified_date: 2020-03-09
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "3d0886e4093d1e0c1833bfc26ae9c107657ec12f7ba19fa517d95f0160f2f77c"
+    sha256: "5661269c290d5ca5b39803a33bb580a05e5067a02de90d88866e252ea414812f"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-571-026
@@ -195,14 +213,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-026
+    source_url: https://web.archive.org/web/20260710175054id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-026
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-571-026
     format: html
     edition: "Issue 01"
     content_date: 2025-07-09
     page_modified_date: 2025-10-06
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "4f5ebd2424f274a9831542e098c14fb5baf423371dad84c67c581e6ef25b3f1a"
+    sha256: "cc6ff85b0ed5e49b8b643713d252bcfa7530b95d9b954286c31f7f92cbb0ce88"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-002
@@ -210,14 +229,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-002
+    source_url: https://web.archive.org/web/20260422051656id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-002
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-002
     format: html
     edition: "Issue 04"
     content_date: 2025-12-31
     page_modified_date: 2026-01-26
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "40e9284ec293b43c11c90f78f9ad4af9b63a790460a5c40ea1ba621ae217eda5"
+    sha256: "3461b2cfe33f1a43224520d6e6abac2651673174c6bab4718832bae45c168fba"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-003
@@ -225,14 +245,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-003
+    source_url: https://web.archive.org/web/20260519011510id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-003
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-003
     format: html
     edition: "Issue 02"
     content_date: 2013-10-31
     page_modified_date: 2018-05-18
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "24f589ea23c423851fd06795e4e458888f1fdb9624cae41e2d9f0a3216a0faad"
+    sha256: "c235950a4479d5532ecfdd863ef101c14b5c74736709faf0166ae4ab14a31283"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-006
@@ -240,14 +261,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-006
+    source_url: https://web.archive.org/web/20260422113749id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-006
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-006
     format: html
     edition: "Issue 02"
     content_date: 2025-03-28
     page_modified_date: 2025-04-04
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "25273df5c6604c4c3fc5db02462ca3f133ca956ff7ab1587147dc29fe744c825"
+    sha256: "525f8a4c4780eb70721fe43f4c0a00a9d60139ef126e43017a12de034a3e933a"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-008
@@ -255,14 +277,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-008
+    source_url: https://web.archive.org/web/20260422120750id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-008
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-008
     format: html
     edition: "Issue 01"
     content_date: 2026-02-11
     page_modified_date: 2026-02-13
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "fcabc7df14db217ef278c326ed9917f73f67ad9a6b68dc6de6e97caa70f213d1"
+    sha256: "15c6963518231198d3609b6a443e732cdb6c2a1dd37ae72ddd1dc8cfcf9846d5"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-009
@@ -270,14 +293,15 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-009
+    source_url: https://web.archive.org/web/20260713002937id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-009
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-009
     format: html
     edition: "Issue 01"
     content_date: 2024-02-14
     page_modified_date: 2025-10-06
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "982513a58ac519e59a41fa4180e380b4408986493785638f99c80a3955e2fb5a"
+    sha256: "169da036cb3e724c94b3ded18635f26895a48f79ebf468a79d3f31a0de20f077"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."
 
   - id: tc-ac-573-010
@@ -285,12 +309,13 @@ documents:
     authority: TC
     type: advisory_circular
     language: en
-    source_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-010
+    source_url: https://web.archive.org/web/20260420182602id_/https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-010
+    official_url: https://tc.canada.ca/en/aviation/reference-centre/advisory-circulars/advisory-circular-ac-no-573-010
     format: html
     edition: "Issue 01"
     content_date: 2024-11-15
     page_modified_date: 2025-10-06
-    retrieved_on: 2026-11-04
+    retrieved_on: 2026-11-05
     status: active
-    sha256: "98559ff48d8bf6c491710ce1fdb5773bb228b2b202ee0ceaf0cdb457ccd004fd"
+    sha256: "6d2a06867eb0ca9b5a19d0ab223832933137a027e4caf895d99f34fafdade63c"
     reuse_note: "Canada.ca terms: non-commercial reproduction is allowed with the title, the author and the source URL; commercial redistribution needs written permission. Hangar does not redistribute the page and quotes it word for word."

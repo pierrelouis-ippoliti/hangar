@@ -46,7 +46,7 @@ The [AC index](https://tc.canada.ca/en/aviation/reference-centre/advisory-circul
 
 ## How each field was filled in
 
-All the documents were downloaded on 2026-11-04, and each SHA-256 was computed from the downloaded file.
+Each SHA-256 was computed from the downloaded file: on 2026-11-04 for the FAA handbooks and the CAR XML, and on 2026-11-05 for the Transport Canada pages, from their Wayback Machine snapshots (see below).
 
 | Field | FAA handbooks | CAR XML | Standards | ACs |
 | --- | --- | --- | --- | --- |
@@ -61,4 +61,10 @@ All the documents were downloaded on 2026-11-04, and each SHA-256 was computed f
 
 In both cases, the content date is the latest amendment in the text.
 
-**Stable hashes.** Each Transport Canada page gave the same SHA-256 when it was fetched twice, about 30 seconds apart. The hash covers the whole page, including the site's menus and footer, so a change to the site's layout would change it even if the text didn't.
+## Where the Transport Canada pages come from
+
+On 2026-11-04, each Transport Canada page gave the same SHA-256 when it was fetched twice, about 30 seconds apart. On 2026-11-05, Standard 571's live page gave a different one. Its text was unchanged: the only difference was a `js-view-dom-id-…` attribute that the site regenerates whenever it rebuilds its cache, inside the page's `<main>` element. A hash of the live pages would therefore keep breaking for no change in the text.
+
+So `hangar fetch` downloads each Transport Canada page from a fixed Wayback Machine snapshot, in raw mode (`web.archive.org/web/<time>id_/<page URL>`), whose bytes never change. The manifest keeps the live page as `official_url`, the address cited to readers. For each of the 15 pages, the snapshot is the latest capture made after the page's last change (its "Date modified"), and the text of its `<main>` element is the same as in the copy reviewed on 2026-11-04. The snapshots date from 2025-12-16 (the cancelled AC 571-005) to 2026-08-13 (Standard 571).
+
+The FAA handbooks and the CAR XML are downloaded from their usual sources, since their bytes don't change.

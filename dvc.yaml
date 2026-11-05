@@ -1,4 +1,19 @@
 # The build pipeline: fetch, parse, chunk, embed, index, then the seed run.
 # Each stage issue adds its own stage here, with its parameters read from
 # configs/pipelines/v0.yaml.
-stages: {}
+stages:
+  # Download every document of the snapshot into data/raw and check its hash.
+  # The documents are not Hangar's to redistribute, so DVC doesn't cache
+  # them (cache: false), and keeps them between runs (persist: true): fetch
+  # skips a file already there with the right hash.
+  fetch:
+    cmd: hangar fetch --config configs/pipelines/v0.yaml
+    deps:
+      - corpus/manifest.yaml
+    params:
+      - configs/pipelines/v0.yaml:
+          - corpus
+    outs:
+      - data/raw:
+          cache: false
+          persist: true

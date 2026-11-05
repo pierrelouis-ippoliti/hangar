@@ -20,6 +20,7 @@ from hangar.observability.logs import (
 )
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.doctor import run_checks
+from hangar.pipelines.fetch import run_fetch
 from hangar.pipelines.settings import Settings, load_settings
 
 logger = logging.getLogger(__name__)
@@ -78,6 +79,11 @@ def run_command(command: str, config_path: Path) -> int:
 def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
     if command == "doctor":
         return _doctor(settings, config)
+
+    if command == "fetch":
+        run_fetch(settings, config)
+
+        return 0
 
     logger.error("hangar %s is not built yet", command)
 
