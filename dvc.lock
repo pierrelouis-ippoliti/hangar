@@ -1,0 +1,20 @@
+schema: '2.0'
+stages:
+  fetch:
+    cmd: hangar fetch --config configs/pipelines/v0.yaml
+    deps:
+    - path: corpus/manifest.yaml
+      hash: md5
+      md5: fc085981bad96d34af4e3a6e029706e1
+      size: 18685
+    params:
+      configs/pipelines/v0.yaml:
+        corpus:
+          snapshot: c1
+          manifest: corpus/manifest.yaml
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 0bc4b8386df8a304e5eb763366e5436e.dir
+      size: 424663275
+      nfiles: 18
