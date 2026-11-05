@@ -9,6 +9,7 @@ import os
 import shutil
 import sys
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from pathlib import Path
@@ -90,22 +91,26 @@ def check_qdrant(url: str) -> CheckResult:
         url: The Qdrant server, such as ``http://127.0.0.1:6333/``.
 
     Returns:
-        A pass when the server's ``/readyz`` endpoint answers 200.
+        A pass when the server's ``/readyz`` endpoint answers 200. The
+        result shows the URL without any user name or password in it.
     """
     ready_url = url.rstrip("/") + "/readyz"
+    shown = _without_credentials(url)
     try:
         with urllib.request.urlopen(ready_url, timeout=QDRANT_TIMEOUT_SECONDS):
             pass
     except urllib.error.HTTPError as error:
-        return CheckResult("Qdrant", False, f"{ready_url} answered {error.code}")
+        return CheckResult(
+            "Qdrant", False, f"{shown.rstrip('/')}/readyz answered {error.code}"
+        )
     except OSError as error:
         reason = getattr(error, "reason", error)
         return CheckResult(
             "Qdrant",
             False,
-            f"no answer from {url} ({reason}). Start it with `make qdrant-up`.",
+            f"no answer from {shown} ({reason}). Start it with `make qdrant-up`.",
         )
-    return CheckResult("Qdrant", True, f"ready at {url}")
+    return CheckResult("Qdrant", True, f"ready at {shown}")
 
 
 def check_api_key(key: SecretStr | None) -> CheckResult:
@@ -177,6 +182,14 @@ def check_model_cache(hf_home: Path | None, model: str, revision: str) -> CheckR
         )
     return CheckResult(
         "Model cache", False, f"can't write to {hub}, where {pinned} would go"
+    )
+
+
+def _without_credentials(url: str) -> str:
+    # Drop "user:password@" from the address, keeping the host and port.
+    parts = urllib.parse.urlsplit(url)
+    return urllib.parse.urlunsplit(
+        parts._replace(netloc=parts.netloc.rpartition("@")[2])
     )
 
 

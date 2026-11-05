@@ -109,3 +109,13 @@ def test_model_cache_fails_when_the_cache_folder_cant_be_created(
     result = check_model_cache(blocker / "hf", MODEL, REVISION)
 
     assert not result.passed
+
+
+def test_qdrant_never_shows_credentials_written_in_its_url() -> None:
+    url = closed_port_url().replace("http://", "http://admin:s3cret-password@")
+
+    result = check_qdrant(url)
+
+    assert "s3cret-password" not in result.detail
+    assert "admin" not in result.detail
+    assert "127.0.0.1" in result.detail
