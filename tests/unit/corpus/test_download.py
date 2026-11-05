@@ -272,3 +272,23 @@ def test_gzip_data_that_ends_early_is_retried_then_fails(
 
     assert "ended early" in str(error_info.value)
     assert len(site.requests) == 3
+
+
+@pytest.mark.parametrize("encoding", [None, "gzip"], ids=["plain", "gzip"])
+def test_file_larger_than_the_limit_fails_without_a_retry(
+    site: FakeSite, tmp_path: Path, encoding: str | None
+) -> None:
+    # Zeros compress about a thousand times: a small gzip answer that would
+    # decode to far more than the limit.
+    site.pages["/big"] = bytes(5_000_000)
+    if encoding:
+        site.encodings["/big"] = encoding
+    http = HttpDownloader(
+        USER_AGENT, max_bytes=1_000_000, sleep=FakeTime().sleep, clock=FakeTime().clock
+    )
+
+    with pytest.raises(DownloadError) as error_info:
+        http.download(f"{site.url}/big", tmp_path / "big")
+
+    assert "1000000 bytes" in str(error_info.value)
+    assert len(site.requests) == 1

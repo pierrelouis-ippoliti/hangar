@@ -19,8 +19,14 @@ from typing import BinaryIO, Protocol
 
 from hangar.core.errors import HangarError
 
-# Read and hash files 1 MiB at a time, so a 205 MB PDF never sits in memory.
+# Read, decode and hash files 1 MiB at a time, so a 205 MB PDF never sits
+# in memory.
 CHUNK_BYTES = 1024 * 1024
+
+# No document may be larger than this once decoded. The largest in C1, the
+# Powerplant handbook, is 215 MB; the limit stops a runaway download or a
+# small gzip answer that would decode to gigabytes.
+MAX_DOWNLOAD_BYTES = 10**9
 
 # Statuses that mean "try again later" rather than "this will never work".
 RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
@@ -93,6 +99,7 @@ class HttpDownloader:
         attempts: int = 3,
         backoff_seconds: float = 2.0,
         timeout_seconds: float = 60.0,
+        max_bytes: int = MAX_DOWNLOAD_BYTES,
         sleep: Callable[[float], None] = time.sleep,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -107,6 +114,8 @@ class HttpDownloader:
             backoff_seconds: The wait before the first retry. It doubles
                 with each retry.
             timeout_seconds: How long to wait for the server to answer.
+            max_bytes: The largest file accepted, once decoded. A larger one
+                fails at once, without a retry.
             sleep: Waits a number of seconds. Tests replace it.
             clock: Gives the current time in seconds. Tests replace it.
         """
@@ -115,6 +124,7 @@ class HttpDownloader:
         self._attempts = attempts
         self._backoff = backoff_seconds
         self._timeout = timeout_seconds
+        self._max_bytes = max_bytes
         self._sleep = sleep
         self._clock = clock
         self._last_request: float | None = None
@@ -186,7 +196,14 @@ class HttpDownloader:
                 )
 
             with destination.open("wb") as file:
-                size, sha256 = _copy_and_hash(response, file, decoder)
+                size, sha256 = _copy_and_hash(
+                    response, file, decoder, max_bytes=self._max_bytes
+                )
+
+            if size > self._max_bytes:
+                raise DownloadError(
+                    f"{url} is larger than the {self._max_bytes} bytes allowed"
+                )
 
             return Download(
                 size_bytes=size,
@@ -257,14 +274,21 @@ def _copy_and_hash(
     source: BinaryIO | http.client.HTTPResponse,
     target: BinaryIO,
     decoder: "zlib._Decompress | None" = None,
+    *,
+    max_bytes: int | None = None,
 ) -> tuple[int, str]:
+    """Copy and hash the source; stop once more than max_bytes were read."""
     digest = hashlib.sha256()
     size = 0
 
     for chunk in _chunks(source, decoder):
+        size += len(chunk)
+
+        if max_bytes is not None and size > max_bytes:
+            break
+
         digest.update(chunk)
         target.write(chunk)
-        size += len(chunk)
 
     return size, digest.hexdigest()
 
@@ -274,7 +298,17 @@ def _chunks(
     decoder: "zlib._Decompress | None",
 ) -> Iterator[bytes]:
     while chunk := source.read(CHUNK_BYTES):
-        yield decoder.decompress(chunk) if decoder else chunk
+        if decoder is None:
+            yield chunk
+            continue
+
+        # Decode at most CHUNK_BYTES at a time: one chunk of gzip data can
+        # decode to far more than that.
+        pending = chunk
+
+        while pending:
+            yield decoder.decompress(pending, CHUNK_BYTES)
+            pending = decoder.unconsumed_tail
 
     if decoder:
         yield decoder.flush()
