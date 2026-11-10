@@ -5,7 +5,7 @@ description = "A RAG system over the FAA maintenance handbooks and Transport Can
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "pydantic>=2.14.2",
+    "pydantic>=2.14.3",
     "pydantic-settings>=2.16.2",
     "pyyaml>=6.0.3",
 ]
