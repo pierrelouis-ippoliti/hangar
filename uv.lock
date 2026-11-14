@@ -1379,7 +1379,7 @@ wheels = [
 
 [[package]]
 name = "hangar"
-version = "0.0.0a1"
+version = "0.0.0a2.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "pydantic" },

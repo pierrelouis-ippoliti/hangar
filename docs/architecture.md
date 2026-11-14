@@ -128,7 +128,17 @@ The `fetch` DVC stage depends on `corpus/manifest.yaml` and on the `corpus` sect
 
 ### Parse
 
-To be written in #15 to #19.
+The parse stage turns each downloaded file into one canonical text, split into passages: one per PDF page, or one per numbered section of a regulation, standard or advisory circular. [ADR-0005](adr/0005-locations-and-identifiers.md) explains these choices.
+
+- **Canonical text.** `parsing.normalise` applies Unicode NFKC, turns every line ending into a plain newline, and collapses runs of spaces and tabs into one space, as `parsing.normalisation` in the pipeline file sets. Newlines stay, so paragraphs and list items stay apart.
+- **Passages** (`core.parsed`) are character ranges of the canonical text, and cover it exactly once. `ParsedDocument` rejects gaps, overlaps, duplicate IDs, and passages that don't start at 0 or don't reach the end of the text.
+- **Locations.** A page passage holds its 1-based index in the PDF, which is canonical, and the printed page label when the PDF has one. A section passage holds its label, such as `571.10`, and its heading path. The text before the first numbered section is a front-matter passage with no label.
+- **IDs** derive from the document and the location: `faa-h-8083-31b#p142`, `car-sor-96-433#s571.10`, `tc-std-571#front`.
+- **Assembly.** Every parser cuts its document into parts and hands them to `parsing.assemble`. It normalises and trims each part, then joins them with a blank line. Each passage includes the blank line that follows it, so the passages cover the text by construction. An empty page keeps a zero-length passage, so page numbers stay continuous.
+- **From offsets to locations.** `ParsedDocument.passages_in_range(start, end)` returns the passages a range of the text covers. The chunker (M3) will use it to find a chunk's pages or sections. Empty passages hold no text, so no range covers them.
+- **Parsers** follow the `parsing.parser.Parser` interface: a manifest entry and a downloaded file in, a parsed document out. Each records its name, the version of its library, the SHA-256 of the file it read, and its warnings, such as empty pages.
+
+The parsers for each format, the `hangar parse` command and the parse report are described as #16 to #19 add them.
 
 ### Chunk
 

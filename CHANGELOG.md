@@ -4,6 +4,12 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
+### Unreleased · M2 Parsing
+
+Added:
+
+- The parsed document and passage models, text normalisation, the mapping from character ranges to pages or sections, and ADR-0005 on locations and identifiers (#15).
+
 ### 0.0.0a1 · M1 Corpus C1 (2026-11-05)
 
 Corpus C1 and the first build stage: `hangar fetch` downloads its 18 documents and checks each one against the manifest's SHA-256.
