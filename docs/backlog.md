@@ -6,6 +6,7 @@ v0 is deliberately naive, so its scores give later versions an honest baseline. 
 | --- | --- | --- |
 | Remove repeated page headers and footers | They add noise to chunks and their embeddings | v2 · Parsing and chunking |
 | Read tables as tables | v0 flattens them into text, which breaks rows apart | v2 · Parsing and chunking |
+| Normalise with NFC instead of NFKC | NFKC turns `m²` into `m2` and `½` into `1⁄2`, which changes technical values in quotes | v2 · Parsing and chunking |
 | Compare pypdfium2 with Docling | Docling recovers layout, headings and tables | v2 · Parsing and chunking |
 | Chunks that follow section structure | Fixed 512-token windows cut sections in the middle | v2 · Parsing and chunking |
 | Sweep chunk size and overlap | 512 tokens without overlap is a starting point, not a measured choice | v2 · Parsing and chunking |

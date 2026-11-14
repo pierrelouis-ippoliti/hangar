@@ -29,6 +29,7 @@ DocumentFormat = Literal["pdf", "xml", "html"]
 DocumentStatus = Literal["active", "cancelled"]
 
 SHA256_PATTERN = r"^[0-9a-f]{64}$"
+DOCUMENT_ID_PATTERN = r"^[a-z0-9]+(-[a-z0-9]+)*$"
 
 
 class DocumentSpec(BaseModel):
@@ -66,7 +67,7 @@ class DocumentSpec(BaseModel):
     # YAML reads `edition: 2023` as a number; keep it as text.
     model_config = ConfigDict(frozen=True, extra="forbid", coerce_numbers_to_str=True)
 
-    id: str = Field(pattern=r"^[a-z0-9]+(-[a-z0-9]+)*$")
+    id: str = Field(pattern=DOCUMENT_ID_PATTERN)
     title: str = Field(min_length=1)
     authority: Authority
     type: DocumentType
