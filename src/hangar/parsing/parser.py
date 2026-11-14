@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Protocol
 
 from hangar.core.corpus import DocumentSpec
+from hangar.core.errors import HangarError
 from hangar.core.parsed import ParsedDocument
+
+
+class ParseError(HangarError):
+    """
+    A file that couldn't be parsed. The message starts with the document ID.
+    """
 
 
 class Parser(Protocol):
@@ -30,5 +37,8 @@ class Parser(Protocol):
         Returns:
             The canonical text, passages that cover it exactly once, and any
             warnings, such as empty pages.
+
+        Raises:
+            ParseError: If the file can't be read as its format.
         """
         ...

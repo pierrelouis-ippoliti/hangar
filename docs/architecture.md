@@ -89,7 +89,8 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
-- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the rules that keep each adapter library inside its stage package and `pipelines` (#16, then #21, #22 and #25).
+- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2. The contract checks every module of `hangar` and exempts those two, so a new package is checked from its first file.
+- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for sentence-transformers, Qdrant and Mistral (#21, #22 and #25).
 
 ## Commands and logs
 
@@ -138,7 +139,14 @@ The parse stage turns each downloaded file into one canonical text, split into p
 - **From offsets to locations.** `ParsedDocument.passages_in_range(start, end)` returns the passages a range of the text covers. The chunker (M3) will use it to find a chunk's pages or sections. Empty passages hold no text, so no range covers them.
 - **Parsers** follow the `parsing.parser.Parser` interface: a manifest entry and a downloaded file in, a parsed document out. Each records its name, the version of its library, the SHA-256 of the file it read, and its warnings, such as empty pages.
 
-The parsers for each format, the `hangar parse` command and the parse report are described as #16 to #19 add them.
+**PDF pages.** `parsing.pdf.PdfPageParser` reads the FAA handbooks with pypdfium2 ([ADR-0004](adr/0004-pypdfium2-for-pdf-text.md)):
+
+- Each page gives one passage, with the text PDFium extracts, its 1-based index, and its printed label when the PDF has page labels. FAA-H-8083-31B has none.
+- The text is kept as extracted, running headers and page numbers included. The only correction: PDFium returns a hyphen it joins across a line break as `U+FFFE`, and the parser puts the hyphen back.
+- A page with no text gets an `empty_page` warning. A page with control, private-use or unassigned characters, such as a figure whose font has no Unicode mapping, gets a `garbled_page` warning. C1 gives 3 empty covers and 2 garbled pages.
+- A file PDFium can't open raises a `ParseError` that starts with the document ID.
+
+The CAR XML and Transport Canada HTML parsers, the `hangar parse` command and the parse report are described as #17 to #19 add them.
 
 ### Chunk
 
