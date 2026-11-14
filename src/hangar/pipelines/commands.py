@@ -21,6 +21,7 @@ from hangar.observability.logs import (
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.doctor import run_checks
 from hangar.pipelines.fetch import run_fetch
+from hangar.pipelines.parse import run_parse
 from hangar.pipelines.settings import Settings, load_settings
 
 logger = logging.getLogger(__name__)
@@ -82,6 +83,11 @@ def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
 
     if command == "fetch":
         run_fetch(settings, config)
+
+        return 0
+
+    if command == "parse":
+        run_parse(settings, config)
 
         return 0
 

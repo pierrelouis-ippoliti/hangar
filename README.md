@@ -29,7 +29,7 @@ uv run hangar doctor  # check Python, Qdrant, the API key, disk space and the mo
 make qdrant-down    # stop it; its data is kept in a Docker volume
 ```
 
-`hangar --help` lists one subcommand per stage. `doctor` and `fetch` work so far: `uv run hangar fetch` downloads the documents into `data/raw` and checks their hashes. The others (`hangar parse`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
+`hangar --help` lists one subcommand per stage. `doctor`, `fetch` and `parse` work so far: `uv run hangar fetch` downloads the documents into `data/raw` and checks their hashes, and `uv run hangar parse` turns them into passages in `data/parsed/c1` and writes `results/v0/parse-report.json`. The others (`hangar chunk`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
 
 ## Versions
 

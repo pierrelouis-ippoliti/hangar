@@ -17,3 +17,26 @@ stages:
       - data/raw:
           cache: false
           persist: true
+
+  # Parse every document into one canonical text split into passages, then
+  # check the results against parsing.checks. The parsed files hold the
+  # documents' text, so DVC doesn't cache them either. The report is
+  # committed to git, so DVC doesn't cache it. The parser code is a
+  # dependency: a new parser version reruns the stage.
+  parse:
+    cmd: hangar parse --config configs/pipelines/v0.yaml
+    deps:
+      - corpus/manifest.yaml
+      - data/raw
+      - src/hangar/core/parsed.py
+      - src/hangar/parsing
+    params:
+      - configs/pipelines/v0.yaml:
+          - corpus
+          - parsing
+          - run.name
+    outs:
+      - data/parsed/c1:
+          cache: false
+      - results/v0/parse-report.json:
+          cache: false

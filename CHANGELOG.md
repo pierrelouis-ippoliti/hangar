@@ -12,6 +12,7 @@ Added:
 - The PDF parser: one passage per page with its printed label, warnings for empty and garbled pages, the rule that only `parsing` and `pipelines` import pypdfium2, and ADR-0004 on pypdfium2 (#16).
 - The CAR parser: one passage per section of Subparts 571 and 573, with its heading path, read from the Justice Canada XML with lxml (#17).
 - The Transport Canada HTML parser: a front-matter passage, then one passage per numbered section of the standards and ACs. The content selectors are now XPath expressions, and `corpus/c1-scope.md` records Standard 571's appendices as left out of C1 (#18).
+- `hangar parse` and its DVC stage: every document of the snapshot parsed into `data/parsed/c1`, the committed parse report `results/v0/parse-report.json`, and data checks with thresholds in `parsing.checks` (#19).
 
 ### 0.0.0a1 · M1 Corpus C1 (2026-11-05)
 

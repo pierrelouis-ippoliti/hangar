@@ -141,6 +141,26 @@ class TcHtmlParsingConfig(ConfigSection):
     content_selectors: ContentSelectors
 
 
+class ParseChecksConfig(ConfigSection):
+    """
+    The thresholds every parsed document must meet, or the parse run stops.
+
+    Attributes:
+        min_characters: The fewest characters a document's text may have.
+        min_sections: The fewest numbered sections a regulation, standard or
+            advisory circular may have.
+        max_empty_page_share: The largest share of a PDF's pages, from 0 to
+            1, that may have no text.
+        max_garbled_page_share: The largest share of a PDF's pages, from 0
+            to 1, that may have unreadable characters.
+    """
+
+    min_characters: PositiveInt
+    min_sections: PositiveInt
+    max_empty_page_share: float = Field(ge=0, le=1)
+    max_garbled_page_share: float = Field(ge=0, le=1)
+
+
 class ParsingConfig(ConfigSection):
     """
     How each document format becomes a canonical text.
@@ -150,12 +170,14 @@ class ParsingConfig(ConfigSection):
         normalisation: The text clean-up applied to every format.
         car: The settings for the regulation XML.
         tc_html: The settings for Transport Canada pages.
+        checks: The thresholds every parsed document must meet.
     """
 
     pdf: PdfParsingConfig
     normalisation: NormalisationConfig
     car: CarParsingConfig
     tc_html: TcHtmlParsingConfig
+    checks: ParseChecksConfig
 
 
 class ChunkingConfig(ConfigSection):

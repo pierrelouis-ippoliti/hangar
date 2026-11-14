@@ -1,0 +1,322 @@
+{
+  "snapshot": "c1",
+  "config_hash": "dfc228d1aab8fed38e3f72b385a4a55d156459f471ea96b6b44c1d54435c30a9",
+  "documents": [
+    {
+      "document_id": "faa-h-8083-30b",
+      "format": "pdf",
+      "source_sha256": "0a39c01bbc454e77a49813cf27e2ef291756fa7111d9308bc290cd0eb71616fd",
+      "parser": {
+        "name": "pypdfium2",
+        "version": "5.15.2 (PDFium 8149)"
+      },
+      "characters": 2316551,
+      "passages": 677,
+      "pages": 677,
+      "empty_pages": 1,
+      "garbled_pages": 1,
+      "sections": null,
+      "warnings": [
+        {
+          "code": "empty_page",
+          "passage_id": "faa-h-8083-30b#p1",
+          "message": "page 1 (printed i) has no text"
+        },
+        {
+          "code": "garbled_page",
+          "passage_id": "faa-h-8083-30b#p404",
+          "message": "page 404 (printed 10-28) has 24 unreadable characters"
+        }
+      ]
+    },
+    {
+      "document_id": "faa-h-8083-31b",
+      "format": "pdf",
+      "source_sha256": "e5adb2696b545344b42bf7bf93c113ea94ff1456e8f8f772a6b6b02e243c4f13",
+      "parser": {
+        "name": "pypdfium2",
+        "version": "5.15.2 (PDFium 8149)"
+      },
+      "characters": 3443249,
+      "passages": 1052,
+      "pages": 1052,
+      "empty_pages": 1,
+      "garbled_pages": 1,
+      "sections": null,
+      "warnings": [
+        {
+          "code": "empty_page",
+          "passage_id": "faa-h-8083-31b#p1",
+          "message": "page 1 has no text"
+        },
+        {
+          "code": "garbled_page",
+          "passage_id": "faa-h-8083-31b#p570",
+          "message": "page 570 has 1 unreadable character"
+        }
+      ]
+    },
+    {
+      "document_id": "faa-h-8083-32b",
+      "format": "pdf",
+      "source_sha256": "7fe4ee09e6593af9307df1d1088d93be39ffa3839ad376ed975c0c952a066eb2",
+      "parser": {
+        "name": "pypdfium2",
+        "version": "5.15.2 (PDFium 8149)"
+      },
+      "characters": 1826951,
+      "passages": 500,
+      "pages": 500,
+      "empty_pages": 1,
+      "garbled_pages": 0,
+      "sections": null,
+      "warnings": [
+        {
+          "code": "empty_page",
+          "passage_id": "faa-h-8083-32b#p1",
+          "message": "page 1 (printed I) has no text"
+        }
+      ]
+    },
+    {
+      "document_id": "car-sor-96-433",
+      "format": "xml",
+      "source_sha256": "a6dde3fea04ff4289e8e4f49696427caa9ccb06386f2ef759b6780fd3b8d1026",
+      "parser": {
+        "name": "car-xml",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 43277,
+      "passages": 31,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 31,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-std-571",
+      "format": "html",
+      "source_sha256": "ba97995f38b144513eadff3c6c01ad878fcd3c03baf79e475d2f60772b5010f5",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 50076,
+      "passages": 14,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 13,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-std-573",
+      "format": "html",
+      "source_sha256": "611445420081bf69f8bd27ac6f18924b3b28870f0aa62b1b0eac7f012c68f249",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 51724,
+      "passages": 16,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 15,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-002",
+      "format": "html",
+      "source_sha256": "8999b229fd0d5f11c07de8cc50748c607dedff5da877f52a019a54dd9dfba2ca",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 26298,
+      "passages": 24,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 23,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-004",
+      "format": "html",
+      "source_sha256": "cdbad5104cf129b2d18b2d22426c74cda03eb38420c8d76f4bbae6dbb0e8139e",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 11257,
+      "passages": 18,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 17,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-006",
+      "format": "html",
+      "source_sha256": "e8a3e4d8d55689732485372b67cde75141dece8deb0ee80e25cb085b3d53f84a",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 18296,
+      "passages": 25,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 24,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-024",
+      "format": "html",
+      "source_sha256": "4f271cf7be189bb2b26e857a1952eee40d3618e1763e30837bac1462ad442475",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 29142,
+      "passages": 32,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 31,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-025",
+      "format": "html",
+      "source_sha256": "5661269c290d5ca5b39803a33bb580a05e5067a02de90d88866e252ea414812f",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 28123,
+      "passages": 27,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 26,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-571-026",
+      "format": "html",
+      "source_sha256": "cc6ff85b0ed5e49b8b643713d252bcfa7530b95d9b954286c31f7f92cbb0ce88",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 19369,
+      "passages": 16,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 15,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-002",
+      "format": "html",
+      "source_sha256": "3461b2cfe33f1a43224520d6e6abac2651673174c6bab4718832bae45c168fba",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 13160,
+      "passages": 17,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 16,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-003",
+      "format": "html",
+      "source_sha256": "c235950a4479d5532ecfdd863ef101c14b5c74736709faf0166ae4ab14a31283",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 11493,
+      "passages": 17,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 16,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-006",
+      "format": "html",
+      "source_sha256": "525f8a4c4780eb70721fe43f4c0a00a9d60139ef126e43017a12de034a3e933a",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 12960,
+      "passages": 22,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 21,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-008",
+      "format": "html",
+      "source_sha256": "15c6963518231198d3609b6a443e732cdb6c2a1dd37ae72ddd1dc8cfcf9846d5",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 32039,
+      "passages": 39,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 38,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-009",
+      "format": "html",
+      "source_sha256": "169da036cb3e724c94b3ded18635f26895a48f79ebf468a79d3f31a0de20f077",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 12206,
+      "passages": 22,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 21,
+      "warnings": []
+    },
+    {
+      "document_id": "tc-ac-573-010",
+      "format": "html",
+      "source_sha256": "6d2a06867eb0ca9b5a19d0ab223832933137a027e4caf895d99f34fafdade63c",
+      "parser": {
+        "name": "tc-html",
+        "version": "6.1.3 (libxml2 2.14.6)"
+      },
+      "characters": 21525,
+      "passages": 25,
+      "pages": null,
+      "empty_pages": null,
+      "garbled_pages": null,
+      "sections": 24,
+      "warnings": []
+    }
+  ]
+}

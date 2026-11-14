@@ -20,6 +20,14 @@ parsing:
     content_selectors:
       standard: //main
       advisory_circular: //main
+  # A parsed document outside these thresholds stops the parse run. In C1,
+  # the shortest document has about 11,000 characters, and each handbook has
+  # at most one empty page and one garbled page.
+  checks:
+    min_characters: 1000
+    min_sections: 1
+    max_empty_page_share: 0.01
+    max_garbled_page_share: 0.01
 
 chunking:
   type: fixed_tokens
