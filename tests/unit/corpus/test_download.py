@@ -12,8 +12,8 @@ from hangar.corpus.download import (
     DownloadError,
     HttpDownloader,
     LocalCopyDownloader,
-    file_sha256,
 )
+from hangar.files import file_sha256
 
 USER_AGENT = "hangar-tests/1.0"
 ETAG = '"v1"'
@@ -221,13 +221,6 @@ def test_local_copy_downloader_copies_the_file_for_a_known_url(
 def test_local_copy_downloader_refuses_an_unknown_url(tmp_path: Path) -> None:
     with pytest.raises(DownloadError):
         LocalCopyDownloader({}).download("https://example.org/x", tmp_path / "x")
-
-
-def test_file_sha256_matches_hashlib(tmp_path: Path) -> None:
-    path = tmp_path / "file"
-    path.write_bytes(b"hangar")
-
-    assert file_sha256(path) == hashlib.sha256(b"hangar").hexdigest()
 
 
 def test_gzip_encoded_answer_is_saved_and_hashed_decoded(

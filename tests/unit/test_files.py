@@ -1,9 +1,10 @@
+import hashlib
 from pathlib import Path
 
 import pytest
 
 from hangar.core.errors import ConfigError
-from hangar.files import read_yaml
+from hangar.files import file_sha256, read_yaml
 
 
 def test_yaml_content_is_returned_as_python_values(tmp_path: Path) -> None:
@@ -39,3 +40,10 @@ def test_missing_file_error_names_the_file(tmp_path: Path) -> None:
 
     assert error_info.value.source == str(path)
     assert str(error_info.value).startswith(f"{path}: can't read the file: ")
+
+
+def test_file_sha256_matches_hashlib(tmp_path: Path) -> None:
+    path = tmp_path / "file"
+    path.write_bytes(b"hangar")
+
+    assert file_sha256(path) == hashlib.sha256(b"hangar").hexdigest()
