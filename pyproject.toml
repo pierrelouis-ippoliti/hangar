@@ -5,6 +5,7 @@ description = "A RAG system over the FAA maintenance handbooks and Transport Can
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "lxml>=6",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.16.2",
     "pypdfium2>=5.14",
@@ -22,6 +23,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.3",
+    "types-lxml>=2026.2.16",
     "types-pyyaml>=6.0.12.20261103",
 ]
 pipeline = [
@@ -114,13 +116,15 @@ forbidden_modules = [
 # allowed packages are ignored, even before they exist. Indirect imports are
 # allowed: cli reaching pypdfium2 through pipelines is fine.
 [[tool.importlinter.contracts]]
-name = "Only parsing and pipelines import pypdfium2"
+name = "Only parsing and pipelines import pypdfium2 and lxml"
 type = "forbidden"
 source_modules = ["hangar"]
-forbidden_modules = ["pypdfium2"]
+forbidden_modules = ["pypdfium2", "lxml"]
 ignore_imports = [
     "hangar.parsing.** -> pypdfium2",
+    "hangar.parsing.** -> lxml",
     "hangar.pipelines.** -> pypdfium2",
+    "hangar.pipelines.** -> lxml",
 ]
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true
