@@ -18,6 +18,7 @@ from hangar.core.corpus import DocumentSpec
 from hangar.core.parsed import ParsedDocument, ParserInfo, SectionLocation
 from hangar.files import file_sha256
 from hangar.parsing.assemble import TextPart, assemble
+from hangar.parsing.lxml_version import lxml_version
 from hangar.parsing.parser import ParseError
 
 PARSER_NAME = "car-xml"
@@ -80,7 +81,7 @@ class CarXmlParser:
         return ParsedDocument(
             document_id=document.id,
             source_sha256=file_sha256(path),
-            parser=ParserInfo(name=PARSER_NAME, version=library_version()),
+            parser=ParserInfo(name=PARSER_NAME, version=lxml_version()),
             text=text,
             passages=passages,
         )
@@ -187,18 +188,6 @@ def block_lines(element: etree._Element, labels: Sequence[str] = ()) -> list[str
         lines.append(" ".join(pending))
 
     return lines
-
-
-def library_version() -> str:
-    """
-    Name the versions of lxml and of the libxml2 it uses.
-
-    Returns:
-        A version such as ``6.1.3 (libxml2 2.14.6)``.
-    """
-    libxml2 = ".".join(str(number) for number in etree.LIBXML_VERSION)
-
-    return f"{etree.__version__} (libxml2 {libxml2})"
 
 
 def _read_body(document: DocumentSpec, path: Path) -> etree._Element:
