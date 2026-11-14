@@ -1401,7 +1401,7 @@ wheels = [
 
 [[package]]
 name = "hangar"
-version = "0.0.0a2.dev0"
+version = "0.0.0a2"
 source = { editable = "." }
 dependencies = [
     { name = "lxml" },
