@@ -89,7 +89,7 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
-- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2. The contract checks every module of `hangar` and exempts those two, so a new package is checked from its first file.
+- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml. The contract checks every module of `hangar` and exempts those two, so a new package is checked from its first file.
 - **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for sentence-transformers, Qdrant and Mistral (#21, #22 and #25).
 
 ## Commands and logs
@@ -146,7 +146,14 @@ The parse stage turns each downloaded file into one canonical text, split into p
 - A page with no text gets an `empty_page` warning. A page with control, private-use or unassigned characters, such as a figure whose font has no Unicode mapping, gets a `garbled_page` warning. C1 gives 3 empty covers and 2 garbled pages.
 - A file PDFium can't open raises a `ParseError` that starts with the document ID.
 
-The CAR XML and Transport Canada HTML parsers, the `hangar parse` command and the parse report are described as #17 to #19 add them.
+**CAR sections.** `parsing.car.CarXmlParser` reads the Justice Canada XML of the regulations with lxml:
+
+- It keeps the sections whose label starts with one of `parsing.car.subparts`, 571 and 573 in v0, in document order: 31 sections, the partly repealed ones included. A configured subpart with no section is an error.
+- Headings don't wrap their sections in this XML: `Heading` elements with a level from 1 to 5 sit next to the `Section` elements. A section's heading path is the latest heading at each level before it, such as `Part V — Airworthiness › Subpart 71 — Aircraft Maintenance Requirements › Maintenance Release`. A heading's history note stays out of it.
+- A section's text starts with the headings that came after the previous section, so the canonical text keeps them in order. Then each `Text` becomes one line, led by the labels above it: `571.02 (1) …`, `(a) …`, `(i) …`. Cross-references stay inline, and the history note becomes a last line, as the consolidation prints it. Reserved ranges, such as 573.16 to 573.29, have no section and stay out.
+- Entities are never resolved and nothing is fetched from the network, so a downloaded file can't make the parser read other files.
+
+The Transport Canada HTML parser, the `hangar parse` command and the parse report are described as #18 and #19 add them.
 
 ### Chunk
 

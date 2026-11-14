@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Made up for tests, in the shape of the Justice Canada XML of the CARs. It
+     holds no text from the regulations. -->
+<Regulation xml:lang="en" xmlns:lims="http://justice.gc.ca/lims">
+  <Identification>
+    <InstrumentNumber>SOR/00-000</InstrumentNumber>
+    <ShortTitle>Example Aviation Regulations</ShortTitle>
+  </Identification>
+  <Body>
+    <Heading level="1"><Label>PART V</Label><TitleText>Example Airworthiness</TitleText></Heading>
+    <Heading level="2"><TitleText>Subpart 1 — Example Certificates</TitleText></Heading>
+    <Section lims:id="1"><Label>501.01</Label><Text>A section of a subpart that is not kept.</Text></Section>
+    <Heading level="2"><TitleText>Subpart 71 — Example Maintenance Requirements</TitleText></Heading>
+    <Heading level="3"><TitleText>Application</TitleText></Heading>
+    <Section lims:id="2">
+      <Label>571.01</Label>
+      <Text>This Subpart applies to</Text>
+      <Paragraph><Label>(a)</Label><Text>example aircraft; and</Text></Paragraph>
+      <Paragraph><Label>(b)</Label><Text>example parts.</Text></Paragraph>
+      <HistoricalNote><HistoricalNoteSubItem>SOR/2000-1, s. 1</HistoricalNoteSubItem><HistoricalNoteSubItem>SOR/2019-2, s. 3</HistoricalNoteSubItem></HistoricalNote>
+    </Section>
+    <Heading level="3"><TitleText>Example Performance Rules</TitleText><HistoricalNote><HistoricalNoteSubItem>SOR/2000-1, s. 2</HistoricalNoteSubItem></HistoricalNote></Heading>
+    <Section lims:id="3">
+      <Label>571.02</Label>
+      <Subsection>
+        <Label>(1)</Label>
+        <Text>A person shall use the methods set out in <XRefExternal reference-type="regulation" link="SOR-00-000">Example Standard 571</XRefExternal> that are</Text>
+        <Paragraph>
+          <Label>(a)</Label>
+          <Text>specified by the manufacturer; or</Text>
+          <Subparagraph><Label>(i)</Label><Text>equivalent to them.</Text></Subparagraph>
+        </Paragraph>
+      </Subsection>
+      <Subsection><Label>(2)</Label><Text><Repealed>[Repealed, SOR/2019-2, s. 4]</Repealed></Text></Subsection>
+    </Section>
+    <Heading level="2"><TitleText>Subpart 73 — Example Maintenance Organizations</TitleText></Heading>
+    <Heading level="3"><TitleText>Division I — General</TitleText></Heading>
+    <Heading level="4"><TitleText>Example Duties</TitleText></Heading>
+    <Section lims:id="4"><Label>573.01</Label><Text><Repealed>[Repealed, SOR/2022-3, s. 1]</Repealed></Text></Section>
+    <Reserved>[<Emphasis style="bold">573.02</Emphasis> to <Emphasis style="bold">573.29</Emphasis> reserved]</Reserved>
+    <Heading level="1"><Label>PART VI</Label><TitleText>Example Operating Rules</TitleText></Heading>
+    <Heading level="2"><TitleText>Subpart 2 — Example Rules</TitleText></Heading>
+    <Section lims:id="5"><Label>602.01</Label><Text>Another section that is not kept.</Text></Section>
+  </Body>
+</Regulation>
