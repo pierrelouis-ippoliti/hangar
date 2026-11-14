@@ -9,6 +9,7 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 Added:
 
 - The parsed document and passage models, text normalisation, the mapping from character ranges to pages or sections, and ADR-0005 on locations and identifiers (#15).
+- The PDF parser: one passage per page with its printed label, warnings for empty and garbled pages, the rule that only `parsing` and `pipelines` import pypdfium2, and ADR-0004 on pypdfium2 (#16).
 
 ### 0.0.0a1 · M1 Corpus C1 (2026-11-05)
 

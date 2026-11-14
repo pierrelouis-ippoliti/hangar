@@ -17,7 +17,8 @@ from pathlib import Path
 
 from hangar.core.corpus import DocumentSpec, RawArtifact, raw_artifact_id
 from hangar.core.errors import HangarError
-from hangar.corpus.download import Downloader, DownloadError, file_sha256
+from hangar.corpus.download import Downloader, DownloadError
+from hangar.files import file_sha256
 from hangar.observability.logs import log_context
 
 logger = logging.getLogger(__name__)

@@ -22,7 +22,7 @@ The stack is Python 3.12 managed with uv; ruff, mypy (strict on `src/`), import-
 - `make reproduce`: setup, Qdrant, then every DVC stage from a clean clone.
 - `make clean-data`: delete `data/` and the Qdrant volume (asks for confirmation).
 - Single test: `uv run pytest tests/unit/test_file.py::test_name`.
-- Tests marked `model` (real BGE-M3) and `llm` (real Mistral call, needs the API key) run only locally, never in CI.
+- Tests marked `model` (real BGE-M3), `llm` (real Mistral call, needs the API key) and `corpus` (reads the downloaded documents in `data/raw`) run only locally, never in CI.
 
 The `hangar` CLI (built with `argparse`) will have one subcommand per stage, each taking a pipeline config (default `configs/pipelines/v0.yaml`): `doctor`, `fetch`, `parse`, `chunk`, `embed`, `index`, `search` (retrieval only, no LLM), `ask`, `seed run`, `seed summarize`. DVC stages in `dvc.yaml` mirror the build commands, so DVC reruns only what a parameter change affects.
 

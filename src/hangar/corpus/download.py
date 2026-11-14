@@ -251,25 +251,6 @@ class LocalCopyDownloader:
         return Download(size_bytes=size, sha256=sha256)
 
 
-def file_sha256(path: Path) -> str:
-    """
-    Compute a file's SHA-256 without reading it all into memory.
-
-    Args:
-        path: The file.
-
-    Returns:
-        The SHA-256, as 64 lowercase hex characters.
-    """
-    digest = hashlib.sha256()
-
-    with path.open("rb") as file:
-        while chunk := file.read(CHUNK_BYTES):
-            digest.update(chunk)
-
-    return digest.hexdigest()
-
-
 def _copy_and_hash(
     source: BinaryIO | http.client.HTTPResponse,
     target: BinaryIO,
