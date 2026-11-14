@@ -19,7 +19,10 @@ def valid_data() -> dict[str, Any]:
             "normalisation": {"unicode_form": "NFKC", "collapse_whitespace": True},
             "car": {"subparts": ["571", "573"]},
             "tc_html": {
-                "content_selectors": {"standard": "main", "advisory_circular": "main"}
+                "content_selectors": {
+                    "standard": "//main",
+                    "advisory_circular": "//main",
+                }
             },
         },
         "chunking": {
@@ -206,7 +209,7 @@ def test_hash_covers_the_resolved_values_so_a_default_matches_its_explicit_value
         (("corpus", "manifest"), "corpus/other.yaml"),
         (("parsing", "normalisation", "collapse_whitespace"), False),
         (("parsing", "car", "subparts"), ["571"]),
-        (("parsing", "tc_html", "content_selectors", "standard"), "article"),
+        (("parsing", "tc_html", "content_selectors", "standard"), "//article"),
         (("chunking", "size"), 256),
         (("chunking", "overlap"), 64),
         (("embedding", "revision"), "0" * 40),

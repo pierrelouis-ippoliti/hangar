@@ -153,7 +153,15 @@ The parse stage turns each downloaded file into one canonical text, split into p
 - A section's text starts with the headings that came after the previous section, so the canonical text keeps them in order. Then each `Text` becomes one line, led by the labels above it: `571.02 (1) …`, `(a) …`, `(i) …`. Cross-references stay inline, and the history note becomes a last line, as the consolidation prints it. Reserved ranges, such as 573.16 to 573.29, have no section and stay out.
 - Entities are never resolved and nothing is fetched from the network, so a downloaded file can't make the parser read other files.
 
-The Transport Canada HTML parser, the `hangar parse` command and the parse report are described as #18 and #19 add them.
+**Transport Canada sections.** `parsing.tc_html.TcHtmlParser` reads the standards and advisory circulars with lxml:
+
+- The content is the one element that the document type's selector in `parsing.tc_html.content_selectors` picks. Selectors are XPath expressions, `//main` for every C1 page, so no CSS selector library is needed. A selector that picks no element or several is an error.
+- A heading from `h2` to `h6` whose text starts with a section number, such as `571.10` or `4.1.1`, starts a passage labelled with that number. Heading levels differ from page to page, so the number decides, not the level. Unnumbered headings, such as "Types of Work" or an appendix after the last section, stay in the section before them. Two sections with the same number are an error.
+- The text before the first numbered section, the title, table of contents and preamble, is the front-matter passage. A page with no numbered section is one front-matter passage with a `no_sections` warning.
+- A section's heading path is the page title, then the numbered headings above it: `Advisory Circular (AC) No. 571-024 › 4.0 … › 4.2 …`.
+- Each block element, such as a paragraph, list item, table row or heading, becomes one line. Table cells are separated by a space, scripts and styles are left out, and the page details at the end of `<main>` ("Date modified") stay in the last section.
+
+The `hangar parse` command and the parse report are described as #19 adds them.
 
 ### Chunk
 

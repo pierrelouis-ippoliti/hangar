@@ -15,11 +15,11 @@ parsing:
   car:
     subparts: ["571", "573"]
   tc_html:
-    # Canada.ca pages put their content in <main>. The HTML parser issue
-    # (M2) confirms or narrows these selectors.
+    # XPath expressions. Every Transport Canada page of C1 puts its content
+    # in one <main> element.
     content_selectors:
-      standard: main
-      advisory_circular: main
+      standard: //main
+      advisory_circular: //main
 
 chunking:
   type: fixed_tokens

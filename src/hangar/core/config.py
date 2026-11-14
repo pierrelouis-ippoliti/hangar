@@ -116,9 +116,14 @@ class ContentSelectors(ConfigSection):
     """
     Where the content sits in a Transport Canada page, per document type.
 
+    Each selector is an XPath expression that must pick exactly one element,
+    such as ``//main``. The HTML parser checks it, since ``core`` doesn't
+    import lxml.
+
     Attributes:
-        standard: The CSS selector of a standard's content.
-        advisory_circular: The CSS selector of an advisory circular's content.
+        standard: The XPath expression of a standard's content.
+        advisory_circular: The XPath expression of an advisory circular's
+            content.
     """
 
     standard: str = Field(min_length=1)
