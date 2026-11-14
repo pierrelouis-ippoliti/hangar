@@ -40,6 +40,7 @@ The [AC index](https://tc.canada.ca/en/aviation/reference-centre/advisory-circul
 ## What the rule leaves out
 
 - **Other standards**, such as Standard 625 (Aircraft Equipment and Maintenance), even though Subparts 571 and 573 refer to them.
+- **Standard 571's appendices A to M** (there is no Appendix I). They sit on [a separate page](https://tc.canada.ca/en/corporate-services/acts-regulations/list-regulations/canadian-aviation-regulations-sor-96-433/standards/standard-571-maintenance/standard-571-appendixes-m-canadian-aviation-regulations-cars), which C1 doesn't include, although the standard links to them throughout. C1 stays frozen at 18 documents, so they are a candidate for a later snapshot.
 - **Other parts of the CARs.** The XML is downloaded whole, but the parser keeps only Subparts 571 and 573.
 - **French versions** of the Transport Canada documents, and translations of any kind.
 - **Cancelled ACs**, as above.
