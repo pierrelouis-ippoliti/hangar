@@ -23,7 +23,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["parse"],
     ["chunk"],
     ["embed"],
     ["index"],
@@ -276,3 +275,21 @@ def test_fetch_stops_on_a_hash_mismatch_with_an_error_naming_the_document(
     assert last["level"] == "ERROR"
     assert last["message"].startswith("doc-two: ")
     assert "SHA-256" in last["message"]
+
+
+def test_parse_reads_the_snapshot_and_stops_on_a_missing_document(
+    workspace: Path,
+) -> None:
+    config = yaml.safe_load(V0_CONFIG.read_text())
+    config["corpus"]["manifest"] = str(ROOT / "corpus" / "manifest.yaml")
+    config_path = workspace / "pipeline.yaml"
+    config_path.write_text(yaml.safe_dump(config))
+
+    assert main(["parse", "--config", str(config_path)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"parse"}
+    assert any("code at unknown commit" in r["message"] for r in records)
+    assert records[-1]["level"] == "ERROR"
+    assert records[-1]["message"].startswith("faa-h-8083-30b: ")
+    assert "run hangar fetch first" in records[-1]["message"]

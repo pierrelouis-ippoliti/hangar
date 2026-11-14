@@ -24,6 +24,12 @@ def valid_data() -> dict[str, Any]:
                     "advisory_circular": "//main",
                 }
             },
+            "checks": {
+                "min_characters": 1000,
+                "min_sections": 1,
+                "max_empty_page_share": 0.01,
+                "max_garbled_page_share": 0.01,
+            },
         },
         "chunking": {
             "type": "fixed_tokens",
@@ -175,6 +181,23 @@ def test_generation_model_must_have_a_price() -> None:
     assert "prices" in error_info.value.problems[0].message
 
 
+@pytest.mark.parametrize("field", ["max_empty_page_share", "max_garbled_page_share"])
+def test_parse_check_shares_are_between_0_and_1(field: str) -> None:
+    data = valid_data()
+    data["parsing"]["checks"][field] = 1.5
+
+    with pytest.raises(ConfigError, match=f"parsing.checks.{field}"):
+        parse_pipeline_config(data, SOURCE)
+
+
+def test_parse_check_minimums_must_be_positive() -> None:
+    data = valid_data()
+    data["parsing"]["checks"]["min_characters"] = 0
+
+    with pytest.raises(ConfigError, match="parsing.checks.min_characters"):
+        parse_pipeline_config(data, SOURCE)
+
+
 def test_hash_is_a_sha256_hex_digest() -> None:
     config = parse_pipeline_config(valid_data(), SOURCE)
 
@@ -210,6 +233,7 @@ def test_hash_covers_the_resolved_values_so_a_default_matches_its_explicit_value
         (("parsing", "normalisation", "collapse_whitespace"), False),
         (("parsing", "car", "subparts"), ["571"]),
         (("parsing", "tc_html", "content_selectors", "standard"), "//article"),
+        (("parsing", "checks", "min_characters"), 500),
         (("chunking", "size"), 256),
         (("chunking", "overlap"), 64),
         (("embedding", "revision"), "0" * 40),

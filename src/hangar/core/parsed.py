@@ -267,3 +267,19 @@ class ParsedDocument(ParsedModel):
             for p in self.passages
             if p.start < p.end and p.start < end and p.end > start
         )
+
+
+class ParsedFile(ParsedModel):
+    """
+    A parsed document as the parse stage writes it.
+
+    The parser can't know the configuration of the run, so the parse stage
+    adds its hash next to the document.
+
+    Attributes:
+        config_hash: The hash of the pipeline configuration of the run.
+        document: The parsed document.
+    """
+
+    config_hash: str = Field(pattern=SHA256_PATTERN)
+    document: ParsedDocument

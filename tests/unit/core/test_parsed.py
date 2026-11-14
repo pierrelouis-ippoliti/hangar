@@ -6,6 +6,7 @@ import pytest
 from hangar.core.parsed import (
     PageLocation,
     ParsedDocument,
+    ParsedFile,
     Passage,
     SectionLocation,
     passage_id,
@@ -208,3 +209,14 @@ def test_parsed_documents_cannot_be_changed() -> None:
 
     with pytest.raises(pydantic.ValidationError):
         parsed.text = "changed"  # type: ignore[misc]
+
+
+def test_parsed_file_pairs_the_document_with_the_config_hash() -> None:
+    parsed_file = ParsedFile(config_hash=FAKE_SHA256, document=document())
+
+    assert ParsedFile.model_validate_json(parsed_file.model_dump_json()) == parsed_file
+
+
+def test_parsed_file_config_hash_must_be_a_sha256() -> None:
+    with pytest.raises(pydantic.ValidationError):
+        ParsedFile(config_hash="abc", document=document())

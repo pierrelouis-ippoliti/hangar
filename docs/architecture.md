@@ -161,7 +161,21 @@ The parse stage turns each downloaded file into one canonical text, split into p
 - A section's heading path is the page title, then the numbered headings above it: `Advisory Circular (AC) No. 571-024 › 4.0 … › 4.2 …`.
 - Each block element, such as a paragraph, list item, table row or heading, becomes one line. Table cells are separated by a space, scripts and styles are left out, and the page details at the end of `<main>` ("Date modified") stay in the last section.
 
-The `hangar parse` command and the parse report are described as #19 adds them.
+**The command.** `hangar parse` runs the stage:
+
+1. It reads the active documents of the snapshot from the manifest, and logs the git commit and whether the checkout has changes. These go in the log, not in the results, because a report written before its own commit would always say it has changes.
+2. The registry in `pipelines.registry` builds one parser per format: PDF, XML and HTML. Each document is read from `<data folder>/raw/<document ID>.<format>`. A missing file, or one its parser can't read, stops the run with an error that starts with the document ID.
+3. It writes the parse report to `results/<run name>/parse-report.json`, which is committed. For each document, the report holds:
+   - the format, the SHA-256 of the file read, and the parser and library versions;
+   - the number of characters and passages;
+   - pages, empty pages and garbled pages for PDFs, or numbered sections for the other formats;
+   - the parser's warnings.
+
+   It holds the configuration hash, but no time, run ID or commit, so the same files, configuration and code give the same report.
+4. It checks each document against `parsing.checks`: a minimum number of characters, a minimum number of numbered sections, and a maximum share of empty and of garbled PDF pages. Every failing document is listed, one line each, and the run stops. The report is still written, so the failure can be read.
+5. Only when every check passes does it write `<data folder>/parsed/<snapshot>/<document ID>.json`: the parsed document with the configuration hash (`core.parsed.ParsedFile`). The folder is written next to the old one, then replaces it whole, so it never mixes two runs.
+
+The `parse` DVC stage depends on the manifest, `data/raw`, the parsing code, and the `corpus`, `parsing` and `run.name` settings. Like `data/raw`, its outputs have `cache: false`: the parsed files hold the documents' text, and the report is in git.
 
 ### Chunk
 
