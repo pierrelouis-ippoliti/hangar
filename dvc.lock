@@ -84,8 +84,8 @@ stages:
       nfiles: 18
     - path: src/hangar/chunking
       hash: md5
-      md5: d3c3432b1fe115e56a2b70f49fe95313.dir
-      size: 9823
+      md5: 55403ed3f2a3568f8a897c692198751d.dir
+      size: 9951
       nfiles: 5
     - path: src/hangar/core/chunks.py
       hash: md5

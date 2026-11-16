@@ -63,17 +63,17 @@ class FixedTokenChunker:
             raise ChunkError(f"{document.document_id}: the text has no tokens")
 
         chunks = []
-        first = 0
+        # Each chunk runs from token `first` up to token `last`, which is
+        # not included. The loop stops once a chunk reaches the last token.
+        first, last = 0, 0
 
-        while True:
+        while last < len(starts):
             last, token_count = self._fit(document, starts, first)
             start, end = _offsets(text, starts, first, last)
             chunks.append(self._make_chunk(document, start, end, token_count))
-
-            if last == len(starts):
-                return chunks
-
             first = max(last - self._overlap, first + 1)
+
+        return chunks
 
     def _fit(
         self, document: ParsedDocument, starts: list[int], first: int
