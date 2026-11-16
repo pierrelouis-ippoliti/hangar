@@ -1,13 +1,13 @@
 """The parse pipeline: from the raw folder to the parsed folder and the report."""
 
 import logging
-import shutil
 from pathlib import Path
 
 from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.corpus import DocumentSpec, raw_artifact_id
 from hangar.core.parsed import ParsedDocument, ParsedFile
 from hangar.corpus.manifest import load_snapshot
+from hangar.files import replace_folder, write_text
 from hangar.observability.logs import log_context
 from hangar.parsing.parser import ParseError, Parser
 from hangar.parsing.report import (
@@ -74,7 +74,7 @@ def run_parse(
         ),
     )
     report_path = results_dir / config.run.name / "parse-report.json"
-    _write_text(report_path, report.model_dump_json(indent=2))
+    write_text(report_path, report.model_dump_json(indent=2))
     logger.info("wrote %s", report_path)
 
     problems = check_report(report, config.parsing.checks)
@@ -83,8 +83,15 @@ def run_parse(
         raise ParseCheckError(problems)
 
     parsed_dir = settings.data_dir / "parsed" / snapshot
-    files = [ParsedFile(config_hash=hash_, document=p) for p in parsed]
-    _replace_folder(parsed_dir, files)
+
+    with replace_folder(parsed_dir) as partial:
+        for parsed_document in parsed:
+            parsed_file = ParsedFile(config_hash=hash_, document=parsed_document)
+            write_text(
+                partial / f"{parsed_document.document_id}.json",
+                parsed_file.model_dump_json(),
+            )
+
     logger.info("wrote %s: %d documents", parsed_dir, len(parsed))
 
     return report
@@ -114,23 +121,3 @@ def _parse_document(
             logger.warning("%s: %s", warning.code, warning.message)
 
         return parsed
-
-
-def _replace_folder(folder: Path, files: list[ParsedFile]) -> None:
-    # Write next to the folder first, so a failed write leaves the previous
-    # results whole.
-    partial = folder.with_name(f"{folder.name}.partial")
-    shutil.rmtree(partial, ignore_errors=True)
-    partial.mkdir(parents=True)
-
-    for parsed_file in files:
-        path = partial / f"{parsed_file.document.document_id}.json"
-        _write_text(path, parsed_file.model_dump_json())
-
-    shutil.rmtree(folder, ignore_errors=True)
-    partial.rename(folder)
-
-
-def _write_text(path: Path, text: str) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text + "\n", encoding="utf-8")
