@@ -55,7 +55,7 @@ All the code lives in one package, `src/hangar/`, split by stage. A package fold
 | --- | --- |
 | `core` | Domain types, configuration models, identifiers, provenance, errors |
 | `observability` | Logging set-up, run recorder, cost table |
-| `files` | Reading the YAML files that configure Hangar, such as the manifest and the pipeline file |
+| `files` | Reading the YAML files that configure Hangar, such as the manifest and the pipeline file, file hashes, and replacing a stage's output folder whole |
 | `corpus` | Manifest loading and validation, downloader, hash checks |
 | `parsing` | FAA PDF pages, CAR XML, Transport Canada HTML, normalisation, parse report |
 | `chunking` | Chunker interface, fixed-token chunker, token counter |
@@ -89,7 +89,7 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
-- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml. The contract checks every module of `hangar` and exempts those two, so a new package is checked from its first file.
+- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, and only `chunking` and `pipelines` import tokenizers and huggingface_hub. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
 - **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for sentence-transformers, Qdrant and Mistral (#21, #22 and #25).
 
 ## Commands and logs
@@ -136,7 +136,7 @@ The parse stage turns each downloaded file into one canonical text, split into p
 - **Locations.** A page passage holds its 1-based index in the PDF, which is canonical, and the printed page label when the PDF has one. A section passage holds its label, such as `571.10`, and its heading path. The text before the first numbered section is a front-matter passage with no label.
 - **IDs** derive from the document and the location: `faa-h-8083-31b#p142`, `car-sor-96-433#s571.10`, `tc-std-571#front`.
 - **Assembly.** Every parser cuts its document into parts and hands them to `parsing.assemble`. It normalises and trims each part, then joins them with a blank line. Each passage includes the blank line that follows it, so the passages cover the text by construction. An empty page keeps a zero-length passage, so page numbers stay continuous.
-- **From offsets to locations.** `ParsedDocument.passages_in_range(start, end)` returns the passages a range of the text covers. The chunker (M3) will use it to find a chunk's pages or sections. Empty passages hold no text, so no range covers them.
+- **From offsets to locations.** `ParsedDocument.passages_in_range(start, end)` returns the passages a range of the text covers. The chunker uses it to find a chunk's pages or sections. Empty passages hold no text, so no range covers them.
 - **Parsers** follow the `parsing.parser.Parser` interface: a manifest entry and a downloaded file in, a parsed document out. Each records its name, the version of its library, the SHA-256 of the file it read, and its warnings, such as empty pages.
 
 **PDF pages.** `parsing.pdf.PdfPageParser` reads the FAA handbooks with pypdfium2 ([ADR-0004](adr/0004-pypdfium2-for-pdf-text.md)):
@@ -179,7 +179,27 @@ The `parse` DVC stage depends on the manifest, `data/raw`, the parsing code, and
 
 ### Chunk
 
-To be written in #20.
+The chunk stage splits each canonical text into chunks of at most 512 tokens, with no overlap, as `chunking` in the pipeline file sets. Tokens are counted with the embedder's own tokenizer, so "512 tokens" means what BGE-M3 sees ([ADR-0006](adr/0006-tokens-counted-with-the-embedder-tokenizer.md)).
+
+- **Chunks** (`core.chunks.Chunk`) hold their document ID, chunker ID, start and end offsets into the canonical text, their text, their token count, and the passages they cover, each with its ID and location. A chunk that crosses a page break lists both pages. Empty pages hold no text, so no chunk lists them.
+- **IDs.** The chunker ID names the configuration: `fixed512`, or `fixed256-o32` when chunks overlap. A chunk's ID is the first 16 hex characters of the SHA-256 of `<document>|<chunker>|<start>|<end>`, so it stays the same from run to run and changes when the parse or the chunker changes. The model rejects an ID that doesn't match, an empty range, and a text whose length doesn't match the offsets.
+- **Token counter** (`chunking.tokens.TokenCounter`): counts a text's tokens, and lists where each token starts. Both leave out the special tokens the model adds. `chunking.hf_tokenizer.HfTokenCounter` reads BGE-M3's `tokenizer.json` at the pinned revision, with truncation turned off. `WhitespaceCounter`, which counts words, stands in for it in tests.
+- **Fixed-token chunker** (`chunking.fixed.FixedTokenChunker`), behind the `chunking.chunker.Chunker` interface, so v2 can add a structure-aware chunker:
+  1. It tokenizes the whole text once.
+  2. It cuts where token 512 starts, then counts that chunk's text again on its own. A tokenizer can split a piece of text a little differently on its own, so while the count is over 512 the cut moves back one token. On C1, 282 of the 3,627 chunks count 510 or 511 on their own.
+  3. The next chunk starts at the cut. The first chunk starts at 0 and the last ends at the end of the text, so the chunks cover the text exactly once.
+  4. A text with no tokens, or a single token that counts over 512 on its own, stops the run with an error that starts with the document ID.
+
+**The command.** `hangar chunk` runs the stage:
+
+1. It reads every file in `<data folder>/parsed/<snapshot>/`, in file name order. No parsed file stops the run and asks for `hangar parse`.
+2. The registry builds the chunker, with the tokenizer of the model named in `embedding`. The tokenizer, about 17 MB, is downloaded the first time, then read from the Hugging Face cache. The model weights aren't needed.
+3. It writes `<data folder>/chunks/<snapshot>/<chunker ID>/chunks.jsonl`, one chunk per line, in document ID order, then in text order.
+4. Next to it, `meta.json` (`core.chunks.ChunksMeta`) records the configuration hash, the tokenizer's model and revision, the SHA-256 of each parsed file read, and the numbers of chunks and tokens. Like the parse report, it holds no time, run ID or commit, so the same inputs give the same file.
+
+The folder is written next to the old one, then replaces it whole (`files.replace_folder`). On C1, the stage takes about 6 seconds and gives 3,627 chunks and 1,851,452 tokens from 18 documents.
+
+The `chunk` DVC stage depends on `data/parsed/c1`, the chunk model and the chunking code, and on `corpus.snapshot`, `chunking`, `embedding.model` and `embedding.revision`: a new embedder means a new tokenizer. Its output has `cache: false`, because the chunks hold the documents' text.
 
 ### Embed
 

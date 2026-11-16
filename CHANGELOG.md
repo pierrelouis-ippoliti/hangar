@@ -4,6 +4,12 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
+### Unreleased · M3 Chunk, embed, index
+
+Added:
+
+- The fixed-token chunker with BGE-M3's tokenizer, `hangar chunk` and its DVC stage, and ADR-0006 on counting tokens with the embedder's tokenizer (#20).
+
 ### 0.0.0a2 · M2 Parsing (2026-11-14)
 
 The second build stage: `hangar parse` turns the 18 documents of C1 into one canonical text each, split into passages by page or section, and checks the results against thresholds.
