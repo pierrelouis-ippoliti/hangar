@@ -37,8 +37,8 @@ class TokenCounter(Protocol):
 
         Returns:
             The character offset of each token's first character, in
-            increasing order, without the special tokens a model adds.
-            Whitespace before a token is not part of it.
+            increasing order, without the special tokens a model adds. A
+            token may include the whitespace before it, as BGE-M3's do.
         """
         ...
 

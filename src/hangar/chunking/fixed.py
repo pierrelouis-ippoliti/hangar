@@ -21,8 +21,8 @@ class FixedTokenChunker:
 
     With no overlap, the chunks cover the text exactly once: the first starts
     at 0, each one ends where the next starts, and the last ends at the end
-    of the text. Whitespace before the first token belongs to the first
-    chunk; whitespace after a token belongs to the chunk of that token.
+    of the text. Each cut falls where the counter says a token starts, so
+    whitespace between two chunks goes wherever the tokenizer puts it.
 
     Attributes:
         id: The chunker ID, such as ``fixed512``.
