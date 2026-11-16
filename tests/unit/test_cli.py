@@ -23,7 +23,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["chunk"],
     ["embed"],
     ["index"],
     ["search"],
@@ -293,3 +292,13 @@ def test_parse_reads_the_snapshot_and_stops_on_a_missing_document(
     assert records[-1]["level"] == "ERROR"
     assert records[-1]["message"].startswith("faa-h-8083-30b: ")
     assert "run hangar fetch first" in records[-1]["message"]
+
+
+def test_chunk_stops_when_nothing_is_parsed_yet(workspace: Path) -> None:
+    assert main(["chunk", "--config", str(V0_CONFIG)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"chunk"}
+    assert records[-1]["level"] == "ERROR"
+    assert records[-1]["message"].startswith("c1: ")
+    assert "run hangar parse first" in records[-1]["message"]

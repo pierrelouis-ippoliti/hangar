@@ -74,3 +74,36 @@ stages:
       hash: md5
       md5: 7846e37d1474cb4d148678b9dca29ff2
       size: 8715
+  chunk:
+    cmd: hangar chunk --config configs/pipelines/v0.yaml
+    deps:
+    - path: data/parsed/c1
+      hash: md5
+      md5: 29bdc35b5a9f3280bd25099e65f80553.dir
+      size: 8513498
+      nfiles: 18
+    - path: src/hangar/chunking
+      hash: md5
+      md5: 55403ed3f2a3568f8a897c692198751d.dir
+      size: 9951
+      nfiles: 5
+    - path: src/hangar/core/chunks.py
+      hash: md5
+      md5: 0d16e6356cd8c7a581544226d7330fa1
+      size: 5971
+    params:
+      configs/pipelines/v0.yaml:
+        chunking:
+          type: fixed_tokens
+          size: 512
+          overlap: 0
+          tokenizer: embedder
+        corpus.snapshot: c1
+        embedding.model: BAAI/bge-m3
+        embedding.revision: 5617a9f61b028005a4858fdac845db406aefb181
+    outs:
+    - path: data/chunks/c1/fixed512
+      hash: md5
+      md5: 8166bd5c9fcf958e810fda5e4424aa36.dir
+      size: 9332857
+      nfiles: 2

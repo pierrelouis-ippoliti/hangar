@@ -18,6 +18,7 @@ from hangar.observability.logs import (
     log_context,
     new_run_id,
 )
+from hangar.pipelines.chunk import run_chunk
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.doctor import run_checks
 from hangar.pipelines.fetch import run_fetch
@@ -88,6 +89,11 @@ def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
 
     if command == "parse":
         run_parse(settings, config)
+
+        return 0
+
+    if command == "chunk":
+        run_chunk(settings, config)
 
         return 0
 
