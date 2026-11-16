@@ -11,7 +11,7 @@ the chunker changes.
 """
 
 import hashlib
-from typing import Self
+from typing import Annotated, Self
 
 from pydantic import (
     BaseModel,
@@ -22,8 +22,8 @@ from pydantic import (
     model_validator,
 )
 
-from hangar.core.config import ChunkingConfig
-from hangar.core.corpus import DOCUMENT_ID_PATTERN
+from hangar.core.config import ChunkingConfig, CommitHash
+from hangar.core.corpus import DOCUMENT_ID_PATTERN, SHA256_PATTERN
 from hangar.core.parsed import Location
 
 # 16 hex characters are 64 bits: a collision among a few million chunks is
@@ -141,3 +141,53 @@ class Chunk(ChunkModel):
             )
 
         return self
+
+
+class TokenizerInfo(ChunkModel):
+    """
+    The tokenizer that counted a chunk set's tokens.
+
+    Attributes:
+        model: The Hugging Face model ID, such as ``BAAI/bge-m3``.
+        revision: The model's commit hash.
+    """
+
+    model: str = Field(min_length=1)
+    revision: CommitHash
+
+
+Sha256 = Annotated[str, Field(pattern=SHA256_PATTERN)]
+
+
+class ChunksMeta(ChunkModel):
+    """
+    Where a chunk set came from: the ``meta.json`` next to ``chunks.jsonl``.
+
+    It holds only values that change with the chunks, so two runs with the
+    same inputs write the same file.
+
+    Attributes:
+        snapshot: The corpus snapshot, such as ``c1``.
+        chunker_id: The chunker, such as ``fixed512``.
+        config_hash: The hash of the pipeline configuration of the run.
+        tokenizer: The tokenizer that counted the tokens.
+        parsed_files: The SHA-256 of each parsed file that was read, keyed
+            by document ID.
+        chunks: How many chunks were written.
+        tokens: How many tokens the chunks hold in all.
+    """
+
+    snapshot: str = Field(min_length=1)
+    chunker_id: str = Field(min_length=1)
+    config_hash: Sha256
+    tokenizer: TokenizerInfo
+    parsed_files: dict[str, Sha256] = Field(min_length=1)
+    chunks: PositiveInt
+    tokens: PositiveInt
+
+    @property
+    def documents(self) -> int:
+        """
+        How many documents were chunked.
+        """
+        return len(self.parsed_files)

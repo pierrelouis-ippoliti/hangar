@@ -40,3 +40,23 @@ stages:
           cache: false
       - results/v0/parse-report.json:
           cache: false
+
+  # Split every parsed document into chunks of at most 512 tokens, counted
+  # with BGE-M3's tokenizer. The chunks hold the documents' text, so DVC
+  # doesn't cache them. The chunker code is a dependency: a change to it
+  # reruns the stage.
+  chunk:
+    cmd: hangar chunk --config configs/pipelines/v0.yaml
+    deps:
+      - data/parsed/c1
+      - src/hangar/core/chunks.py
+      - src/hangar/chunking
+    params:
+      - configs/pipelines/v0.yaml:
+          - corpus.snapshot
+          - chunking
+          - embedding.model
+          - embedding.revision
+    outs:
+      - data/chunks/c1/fixed512:
+          cache: false

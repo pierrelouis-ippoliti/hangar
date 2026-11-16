@@ -14,6 +14,7 @@ from hangar.chunking.fixed import FixedTokenChunker
 from hangar.chunking.hf_tokenizer import HfTokenCounter
 from hangar.core.parsed import ParsedFile
 from hangar.pipelines.config import load_pipeline_config
+from hangar.pipelines.registry import build_chunker
 from hangar.pipelines.settings import Settings
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -31,6 +32,14 @@ def test_bge_m3_tokens_and_their_starts(counter: HfTokenCounter) -> None:
     # includes the space before it.
     assert counter.count("hello world") == 3
     assert counter.token_starts("hello world") == [0, 4, 5]
+
+
+@pytest.mark.model
+def test_the_registry_builds_the_fixed_512_chunker() -> None:
+    chunker = build_chunker(CONFIG.chunking, CONFIG.embedding)
+
+    assert isinstance(chunker, FixedTokenChunker)
+    assert chunker.id == "fixed512"
 
 
 @pytest.mark.model

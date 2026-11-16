@@ -4,7 +4,7 @@ from typing import Any
 import pydantic
 import pytest
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id, chunker_id
+from hangar.core.chunks import Chunk, ChunksMeta, PassageRef, chunk_id, chunker_id
 from hangar.core.config import ChunkingConfig
 from hangar.core.parsed import PageLocation
 
@@ -103,3 +103,32 @@ def test_a_chunk_id_must_derive_from_its_content_and_location() -> None:
 def test_a_chunk_covers_at_least_one_passage() -> None:
     with pytest.raises(pydantic.ValidationError, match="passages"):
         chunk(passages=[])
+
+
+def meta(**changes: Any) -> ChunksMeta:
+    fields: dict[str, Any] = {
+        "snapshot": "c1",
+        "chunker_id": CHUNKER_ID,
+        "config_hash": "a" * 64,
+        "tokenizer": {"model": "BAAI/bge-m3", "revision": "b" * 40},
+        "parsed_files": {DOCUMENT_ID: "c" * 64},
+        "chunks": 3,
+        "tokens": 1200,
+    }
+    fields.update(changes)
+
+    return ChunksMeta.model_validate(fields)
+
+
+def test_chunks_meta_counts_the_documents_it_read() -> None:
+    assert meta().documents == 1
+
+
+def test_chunks_meta_needs_at_least_one_parsed_file() -> None:
+    with pytest.raises(pydantic.ValidationError, match="parsed_files"):
+        meta(parsed_files={})
+
+
+def test_chunks_meta_rejects_a_bad_file_hash() -> None:
+    with pytest.raises(pydantic.ValidationError, match="parsed_files"):
+        meta(parsed_files={DOCUMENT_ID: "not-a-hash"})
