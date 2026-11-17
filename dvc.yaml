@@ -60,3 +60,20 @@ stages:
     outs:
       - data/chunks/c1/fixed512:
           cache: false
+
+  # Turn every chunk into a BGE-M3 dense vector. The vectors hold no
+  # document text, and take about 25 minutes to rebuild on a laptop GPU (an
+  # hour on the CPU), so DVC caches them. The stage reads only the chunks
+  # file, so it can also run on a notebook GPU; docs/architecture.md says
+  # how. Set HANGAR_DEVICE=cuda to use a local NVIDIA GPU.
+  embed:
+    cmd: hangar embed --config configs/pipelines/v0.yaml
+    deps:
+      - data/chunks/c1/fixed512/chunks.jsonl
+      - src/hangar/core/vectors.py
+      - src/hangar/embedding
+    params:
+      - configs/pipelines/v0.yaml:
+          - embedding
+    outs:
+      - data/vectors/c1/fixed512/bge-m3-dense
