@@ -10,6 +10,7 @@ check the CPU and the GPU against one reference vector.
 import json
 import math
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -92,3 +93,23 @@ def test_the_registry_builds_the_pinned_model() -> None:
         CONFIG.embedding.revision,
     )
     assert embedder.normalized
+
+
+def test_loading_the_model_never_fetches_a_safetensors_copy(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    # The pinned revision has only pytorch_model.bin. transformers then starts
+    # a thread that downloads a safetensors copy from a bot's pull request, an
+    # unpinned branch of 2.3 GB, unless the conversion is turned off.
+    import transformers.modeling_utils
+
+    calls: list[Any] = []
+    monkeypatch.setattr(
+        transformers.modeling_utils,
+        "auto_conversion",
+        lambda *args, **kwargs: calls.append(args),
+    )
+
+    build_embedder(CONFIG.embedding, "cpu")
+
+    assert calls == []

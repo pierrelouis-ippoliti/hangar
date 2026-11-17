@@ -6,6 +6,7 @@ its dense output: one vector per text. BGE-M3's sparse and multi-vector
 outputs wait for v3.
 """
 
+import os
 from collections.abc import Sequence
 
 import numpy as np
@@ -38,6 +39,12 @@ class SentenceTransformerEmbedder:
         Raises:
             EmbedError: If the model doesn't report its vector dimension.
         """
+        # BGE-M3's pinned revision has only pytorch_model.bin. After loading
+        # it, transformers would start a thread that downloads a safetensors
+        # copy (2.3 GB) from a bot's pull request, an unpinned branch. The
+        # model never uses that copy, so the download is turned off. This
+        # setting applies to the whole process.
+        os.environ["DISABLE_SAFETENSORS_CONVERSION"] = "true"
         self._model = SentenceTransformer(
             config.model, revision=config.revision, device=device
         )
