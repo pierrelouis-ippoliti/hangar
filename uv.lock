@@ -1522,6 +1522,7 @@ source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },
     { name = "lxml" },
+    { name = "numpy" },
     { name = "pyarrow" },
     { name = "pydantic" },
     { name = "pydantic-settings" },
@@ -1550,6 +1551,7 @@ pipeline = [
 requires-dist = [
     { name = "huggingface-hub", specifier = ">=2.4.0" },
     { name = "lxml", specifier = ">=6" },
+    { name = "numpy", specifier = ">=2.5.5" },
     { name = "pyarrow", specifier = ">=26.0.1" },
     { name = "pydantic", specifier = ">=2.14.2" },
     { name = "pydantic-settings", specifier = ">=2.16.2" },
