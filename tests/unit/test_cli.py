@@ -23,7 +23,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["embed"],
     ["index"],
     ["search"],
     ["ask"],
@@ -302,3 +301,13 @@ def test_chunk_stops_when_nothing_is_parsed_yet(workspace: Path) -> None:
     assert records[-1]["level"] == "ERROR"
     assert records[-1]["message"].startswith("c1: ")
     assert "run hangar parse first" in records[-1]["message"]
+
+
+def test_embed_stops_when_nothing_is_chunked_yet(workspace: Path) -> None:
+    assert main(["embed", "--config", str(V0_CONFIG)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"embed"}
+    assert records[-1]["level"] == "ERROR"
+    assert records[-1]["message"].startswith("c1/fixed512: ")
+    assert "run hangar chunk first" in records[-1]["message"]
