@@ -7,10 +7,12 @@ requires-python = ">=3.12"
 dependencies = [
     "huggingface-hub>=2.4.0",
     "lxml>=6",
+    "pyarrow>=26.0.1",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.16.2",
     "pypdfium2>=5.14",
     "pyyaml>=6.0.3",
+    "sentence-transformers>=6.3.0",
     "tokenizers>=0.23.3",
 ]
 
