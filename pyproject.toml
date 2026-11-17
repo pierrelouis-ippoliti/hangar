@@ -154,6 +154,22 @@ ignore_imports = [
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true
 
+[[tool.importlinter.contracts]]
+name = "Only embedding and pipelines import torch and its model libraries"
+type = "forbidden"
+source_modules = ["hangar"]
+forbidden_modules = ["sentence_transformers", "transformers", "torch"]
+ignore_imports = [
+    "hangar.embedding.** -> sentence_transformers",
+    "hangar.embedding.** -> transformers",
+    "hangar.embedding.** -> torch",
+    "hangar.pipelines.** -> sentence_transformers",
+    "hangar.pipelines.** -> transformers",
+    "hangar.pipelines.** -> torch",
+]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib", "-m", "not model and not llm and not corpus"]
