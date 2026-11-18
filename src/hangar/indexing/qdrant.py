@@ -8,6 +8,7 @@ in-memory mode, ``QdrantClient(":memory:")``, through the same calls.
 from collections.abc import Mapping, Sequence
 
 from qdrant_client import QdrantClient, models
+from qdrant_client.http.exceptions import ResponseHandlingException
 
 from hangar.core.chunks import Chunk
 from hangar.indexing.index import IndexHit, VectorIndexError
@@ -64,10 +65,18 @@ class QdrantIndex:
             dimension: How many values each vector should have.
 
         Raises:
-            VectorIndexError: If the collection is missing or holds vectors
-                of another dimension.
+            VectorIndexError: If Qdrant can't be reached, or the collection
+                is missing or holds vectors of another dimension.
         """
-        if not self._client.collection_exists(self.name):
+        try:
+            exists = self._client.collection_exists(self.name)
+        except ResponseHandlingException as error:
+            raise VectorIndexError(
+                f"{self.name}: can't reach Qdrant ({error}); "
+                "start it with make qdrant-up"
+            ) from error
+
+        if not exists:
             raise VectorIndexError(
                 f"{self.name}: the collection doesn't exist; run hangar index first"
             )

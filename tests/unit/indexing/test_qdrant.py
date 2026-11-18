@@ -1,4 +1,5 @@
 import math
+import socket
 
 import pytest
 from qdrant_client import QdrantClient
@@ -129,3 +130,18 @@ def test_upsert_refuses_chunks_and_vectors_of_different_lengths(
 
 def test_version_names_the_qdrant_version(index: QdrantIndex) -> None:
     assert index.version() == "1.20.0"
+
+
+def test_check_says_how_to_start_qdrant_when_it_is_not_running() -> None:
+    with socket.socket() as sock:
+        sock.bind(("127.0.0.1", 0))
+        port = sock.getsockname()[1]
+
+    # No server answers, so skip the client's own version check, which would
+    # only warn.
+    client = QdrantClient(
+        url=f"http://127.0.0.1:{port}", timeout=2, check_compatibility=False
+    )
+
+    with pytest.raises(VectorIndexError, match=f"^{COLLECTION}: .*make qdrant-up"):
+        QdrantIndex(client, COLLECTION).check(dimension=3)

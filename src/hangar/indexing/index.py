@@ -64,8 +64,8 @@ class VectorIndex(Protocol):
             dimension: How many values each vector should have.
 
         Raises:
-            VectorIndexError: If the collection is missing or holds vectors
-                of another dimension.
+            VectorIndexError: If the store can't be reached, or the
+                collection is missing or holds vectors of another dimension.
         """
         ...
 
