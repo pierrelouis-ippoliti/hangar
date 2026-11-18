@@ -138,3 +138,31 @@ stages:
       md5: b150d913f68eb666ca571e73f51db59e.dir
       size: 15551528
       nfiles: 2
+  index:
+    cmd: hangar index --config configs/pipelines/v0.yaml
+    deps:
+    - path: data/chunks/c1/fixed512/chunks.jsonl
+      hash: md5
+      md5: d45b99c61899dc1e743ff6d73208d24f
+      size: 9330949
+    - path: data/vectors/c1/fixed512/bge-m3-dense
+      hash: md5
+      md5: b150d913f68eb666ca571e73f51db59e.dir
+      size: 15551528
+      nfiles: 2
+    - path: src/hangar/indexing
+      hash: md5
+      md5: 12b7a7ccaebfcad69005a456e2994025.dir
+      size: 11688
+      nfiles: 5
+    params:
+      configs/pipelines/v0.yaml:
+        index:
+          type: qdrant
+          distance: cosine
+        run.name: v0
+    outs:
+    - path: results/v0/index-manifest.json
+      hash: md5
+      md5: 809546beb9bcc23c0783a0503c0e9000
+      size: 620

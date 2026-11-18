@@ -1,0 +1,18 @@
+{
+  "collection": "c1__fixed512__bge-m3-dense",
+  "snapshot": "c1",
+  "chunker_id": "fixed512",
+  "embedder_id": "bge-m3-dense",
+  "embedder": {
+    "model_id": "BAAI/bge-m3",
+    "revision": "5617a9f61b028005a4858fdac845db406aefb181",
+    "dimension": 1024,
+    "normalized": true
+  },
+  "distance": "cosine",
+  "points": 3627,
+  "qdrant_version": "1.20.0",
+  "config_hash": "dfc228d1aab8fed38e3f72b385a4a55d156459f471ea96b6b44c1d54435c30a9",
+  "chunks_sha256": "6d6964cd972639bf9342c36dc66382429d548553261c8e1c44a896e9ec523949",
+  "vectors_sha256": "91bab07454698d142bbd1ccec51be94b1a9c7d782e418906892ca4b8452bae5e"
+}
