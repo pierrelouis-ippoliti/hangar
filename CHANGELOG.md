@@ -4,7 +4,9 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
-### Unreleased · M3 Chunk, embed, index
+### 0.0.0a3 · M3 Chunk, embed, index (2026-11-18)
+
+The last three build stages: `hangar chunk`, `hangar embed` and `hangar index` turn the parsed C1 text into 3,627 chunks of up to 512 BGE-M3 tokens, embed them with BGE-M3 and load them into Qdrant. `hangar search` returns the top 5 chunks for a question.
 
 Added:
 
