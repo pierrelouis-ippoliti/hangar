@@ -122,6 +122,24 @@ forbidden_modules = [
     "hangar.files",
 ]
 
+# retrieval sits above the other stages because it combines the embedder
+# and the vector index. It may use only their interfaces: no other stage,
+# and none of the adapters, which pipelines builds and passes in.
+[[tool.importlinter.contracts]]
+name = "retrieval uses only the embedding and indexing interfaces"
+type = "forbidden"
+source_modules = ["hangar.retrieval"]
+allow_indirect_imports = true
+forbidden_modules = [
+    "hangar.corpus",
+    "hangar.parsing",
+    "hangar.chunking",
+    "hangar.generation",
+    "hangar.evaluation",
+    "hangar.embedding.st_embedder",
+    "hangar.indexing.qdrant",
+]
+
 # Adapter libraries stay inside their stage package. Only that package and
 # pipelines, which constructs the adapters, may import them. The contract
 # checks every module of hangar, so a new package is covered at once; the

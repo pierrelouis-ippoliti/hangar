@@ -13,6 +13,7 @@ from hangar.core.config import (
     EmbeddingConfig,
     IndexConfig,
     ParsingConfig,
+    RetrievalConfig,
 )
 from hangar.core.corpus import DocumentFormat
 from hangar.embedding.embedder import Embedder
@@ -21,6 +22,8 @@ from hangar.parsing.car import CarXmlParser
 from hangar.parsing.parser import Parser
 from hangar.parsing.pdf import PdfPageParser
 from hangar.parsing.tc_html import TcHtmlParser
+from hangar.retrieval.dense import DenseRetriever
+from hangar.retrieval.retriever import Retriever
 
 
 def build_parsers(config: ParsingConfig) -> dict[DocumentFormat, Parser]:
@@ -101,3 +104,20 @@ def build_index(config: IndexConfig, url: str, name: str) -> VectorIndex:
     from hangar.indexing.qdrant import QdrantIndex
 
     return QdrantIndex(QdrantClient(url=url), name)
+
+
+def build_retriever(
+    config: RetrievalConfig, embedder: Embedder, index: VectorIndex
+) -> Retriever:
+    """
+    Build the retriever from the embedder and the index it searches.
+
+    Args:
+        config: The retrieval section of the pipeline configuration.
+        embedder: The embedder that made the collection's vectors.
+        index: The vector index of the collection.
+
+    Returns:
+        The dense retriever, returning ``config.top_k`` chunks.
+    """
+    return DenseRetriever(embedder, index, top_k=config.top_k)

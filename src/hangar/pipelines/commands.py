@@ -25,12 +25,13 @@ from hangar.pipelines.embed import run_embed
 from hangar.pipelines.fetch import run_fetch
 from hangar.pipelines.index import run_index
 from hangar.pipelines.parse import run_parse
+from hangar.pipelines.search import format_results, run_search
 from hangar.pipelines.settings import Settings, load_settings
 
 logger = logging.getLogger(__name__)
 
 
-def run_command(command: str, config_path: Path) -> int:
+def run_command(command: str, config_path: Path, question: str | None = None) -> int:
     """
     Run one ``hangar`` subcommand as a logged run.
 
@@ -42,6 +43,8 @@ def run_command(command: str, config_path: Path) -> int:
     Args:
         command: The subcommand, such as ``doctor`` or ``seed run``.
         config_path: The pipeline file to read.
+        question: The question, for the commands that take one, such as
+            ``search``.
 
     Returns:
         The exit code: 0 on success, 1 on failure.
@@ -69,7 +72,7 @@ def run_command(command: str, config_path: Path) -> int:
             config = load_pipeline_config(config_path)
             logger.info("read %s, config hash %s", config_path, config_hash(config))
 
-            return _run(command, settings, config)
+            return _run(command, settings, config, question)
         except HangarError as error:
             logger.error("%s", error)
             return 1
@@ -80,7 +83,9 @@ def run_command(command: str, config_path: Path) -> int:
             close_logging()
 
 
-def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
+def _run(
+    command: str, settings: Settings, config: PipelineConfig, question: str | None
+) -> int:
     if command == "doctor":
         return _doctor(settings, config)
 
@@ -109,6 +114,9 @@ def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
 
         return 0
 
+    if command == "search":
+        return _search(settings, config, question)
+
     logger.error("hangar %s is not built yet", command)
 
     return 1
@@ -132,5 +140,22 @@ def _doctor(settings: Settings, config: PipelineConfig) -> int:
         return 1
 
     logger.info("all %d checks passed", len(results))
+
+    return 0
+
+
+def _search(settings: Settings, config: PipelineConfig, question: str | None) -> int:
+    if question is None or not question.strip():
+        logger.error(
+            "hangar search needs a question, such as: "
+            "hangar search 'What is a maintenance release?'"
+        )
+
+        return 1
+
+    results = run_search(settings, config, question)
+    # The results go to standard output, apart from the log lines on
+    # standard error, so they can be piped or saved.
+    print(format_results(results))
 
     return 0

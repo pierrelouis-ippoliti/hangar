@@ -152,8 +152,8 @@ stages:
       nfiles: 2
     - path: src/hangar/indexing
       hash: md5
-      md5: 12b7a7ccaebfcad69005a456e2994025.dir
-      size: 11688
+      md5: 656ea17143a32aa79dad0e61f47408e4.dir
+      size: 12079
       nfiles: 5
     params:
       configs/pipelines/v0.yaml:
