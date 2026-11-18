@@ -23,7 +23,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["search"],
     ["ask"],
     ["seed", "run"],
     ["seed", "summarize"],
@@ -320,3 +319,21 @@ def test_index_stops_when_nothing_is_chunked_yet(workspace: Path) -> None:
     assert records[-1]["level"] == "ERROR"
     assert records[-1]["message"].startswith("c1__fixed512__bge-m3-dense: ")
     assert "run hangar chunk first" in records[-1]["message"]
+
+
+def test_search_needs_a_question_on_the_command_line() -> None:
+    with pytest.raises(SystemExit) as exit_info:
+        main(["search", "--config", str(V0_CONFIG)])
+
+    assert exit_info.value.code == 2
+
+
+def test_search_refuses_a_blank_question_before_loading_anything(
+    workspace: Path,
+) -> None:
+    assert main(["search", "  ", "--config", str(V0_CONFIG)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"search"}
+    assert records[-1]["level"] == "ERROR"
+    assert "needs a question" in records[-1]["message"]

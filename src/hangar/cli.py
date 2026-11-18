@@ -20,6 +20,9 @@ COMMANDS = {
     "ask": "answer a question from the documents, with citations",
 }
 
+# The commands that take a question as their first argument.
+QUESTION_COMMANDS = {"search"}
+
 SEED_COMMANDS = {
     "run": "answer every seed question",
     "summarize": "summarize the scores of a seed run",
@@ -32,7 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     Returns:
         A parser with `--version` and one subcommand per pipeline stage.
-        Every subcommand takes `--config`.
+        Every subcommand takes `--config`; `search` also takes a question.
     """
     parser = argparse.ArgumentParser(
         prog="hangar",
@@ -48,7 +51,10 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
 
     for name, summary in COMMANDS.items():
-        _add_command(commands, name, summary)
+        command = _add_command(commands, name, summary)
+
+        if name in QUESTION_COMMANDS:
+            command.add_argument("question", help="the question, in quotes")
 
     seed = commands.add_parser("seed", help="run or summarize the seed questions")
 
@@ -80,14 +86,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command == "seed":
         command = f"seed {args.seed_command}"
 
-    return run_command(command, args.config)
+    return run_command(command, args.config, getattr(args, "question", None))
 
 
 def _add_command(
     commands: "argparse._SubParsersAction[argparse.ArgumentParser]",
     name: str,
     summary: str,
-) -> None:
+) -> argparse.ArgumentParser:
     command = commands.add_parser(name, help=summary, description=summary)
 
     command.add_argument(
@@ -96,3 +102,5 @@ def _add_command(
         default=DEFAULT_CONFIG,
         help="the pipeline file (default: %(default)s)",
     )
+
+    return command
