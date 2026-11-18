@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from hangar.chunking.chunker import ChunkError
 from hangar.core.chunks import Chunk, PassageRef, chunk_id
 from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.parsed import PageLocation
@@ -149,7 +150,7 @@ def test_a_chunk_listed_twice_stops_the_run(
     twice = chunk(0, "one two three ")
     settings, config = setup(tmp_path, monkeypatch, chunks=[twice, twice])
 
-    with pytest.raises(EmbedError, match=f"^{twice.id}: .*more than once"):
+    with pytest.raises(ChunkError, match=f"^{twice.id}: .*more than once"):
         run_embed(settings, config, embedder=HashEmbedder())
 
 
