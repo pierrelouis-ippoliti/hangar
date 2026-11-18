@@ -171,6 +171,18 @@ ignore_imports = [
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true
 
+[[tool.importlinter.contracts]]
+name = "Only indexing and pipelines import qdrant_client"
+type = "forbidden"
+source_modules = ["hangar"]
+forbidden_modules = ["qdrant_client"]
+ignore_imports = [
+    "hangar.indexing.** -> qdrant_client",
+    "hangar.pipelines.** -> qdrant_client",
+]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib", "-m", "not model and not llm and not corpus"]
