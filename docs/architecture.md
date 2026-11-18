@@ -90,7 +90,8 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
 - **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, only `chunking` and `pipelines` import tokenizers and huggingface_hub, only `embedding` and `pipelines` import sentence-transformers, transformers and torch, and only `indexing` and `pipelines` import qdrant-client. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
-- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for Mistral (#25).
+- **retrieval:** `retrieval` may use the embedding and indexing interfaces, but no other stage and neither adapter module (`embedding.st_embedder`, `indexing.qdrant`). `pipelines` builds the adapters and passes them in.
+- **Still to add:** the same adapter rule for Mistral (#25).
 
 ## Commands and logs
 
@@ -270,7 +271,30 @@ The `index` DVC stage depends on the chunks file, the vectors folder, the indexi
 
 ### Retrieve
 
-To be written in #23.
+Retrieval finds the chunks for a question. It is the first step of the answering path, and `hangar search` runs it alone, without the language model.
+
+- **Scored chunk** (`core.retrieval.ScoredChunk`): the chunk, its score, its rank from 1, and the ID of the retriever that found it, so later evaluations can compare retrievers on the same questions.
+- **Retriever interface** (`retrieval.retriever.Retriever`): a question in, scored chunks out, best first. v3's sparse, BM25 and hybrid retrievers will follow it.
+- **Dense retriever** (`retrieval.dense.DenseRetriever`): it embeds the question with `embed_query`, searches the vector index, and returns the top `retrieval.top_k` chunks, 5 in v0. The score is the cosine similarity of the two vectors.
+- **Fixed retriever** (`retrieval.retriever.FixedRetriever`), for tests: it returns the same chunks for every question, so the generation tests of M4 need no embedder or index.
+
+`retrieval` is the one stage package that uses other stages, because it combines the embedder and the vector index. It uses only their interfaces; `pipelines` builds the adapters and passes them in.
+
+**The command.** `hangar search "question"`:
+
+1. A blank question stops the command before anything is loaded.
+2. It builds the Qdrant index of the configured collection and the BGE-M3 embedder, then checks that the collection exists with vectors of the model's dimension. If Qdrant isn't running, the error says to run `make qdrant-up`; if the collection is missing, to run `hangar index`.
+3. It prints each chunk on standard output, apart from the log lines on standard error: the rank, the score, the document, the pages or sections, then a 160-character excerpt.
+
+   ```text
+   1. 0.737  faa-h-8083-30b, p. 323 (7-79)
+      ens the nut on the plug. Turnbuckles After a turnbuckle has been properly adjusted, it must be safetied. There are several methods of safetying turnbuckles; how…
+   ```
+
+   A page shows its index, and its printed label in brackets when the PDF has one. A section shows `§` and its number, and the text before the first numbered section shows as `front matter`. A chunk that covers several passages shows its first and last: `p. 323 (7-79) to p. 324 (7-80)`.
+4. The log records the chunk IDs and scores.
+
+Each search loads the 2.3 GB model again, which takes most of its 9 seconds on the laptop. Keeping the model loaded between questions is in the backlog.
 
 ### Generate
 

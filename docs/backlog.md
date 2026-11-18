@@ -14,4 +14,6 @@ v0 is deliberately naive, so its scores give later versions an honest baseline. 
 | Rerank the top candidates with a cross-encoder | It should push the right passage higher, at some cost in latency | v4 · Reranking |
 | LoRA fine-tuning of the embedder and the reranker | Maintenance vocabulary is narrow and specialised | v5 · Domain fine-tuning |
 | Query rewriting, HyDE, parent-child chunks, contextual enrichment | Vague or multi-part questions are hard to match | v6 · Advanced retrieval |
+| Filter or weight results by authority when a question is about one regulator | In #23's manual searches, a question about Canadian AMO records found an FAA passage on 14 CFR 43.9 in its top 5 | v6 · Advanced retrieval |
 | Structured answers, citation checking and an abstention policy | Every claim should trace to a passage, and the system should say when it has no answer | v7 · Grounded answers |
+| Keep the embedding model loaded between questions | Each `hangar search` loads BGE-M3 (2.3 GB) again, about 9 seconds per question on the laptop | v9 (remote embedder and LLM clients) |
