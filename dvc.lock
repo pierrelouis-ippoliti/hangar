@@ -107,3 +107,34 @@ stages:
       md5: 8166bd5c9fcf958e810fda5e4424aa36.dir
       size: 9332857
       nfiles: 2
+  embed:
+    cmd: hangar embed --config configs/pipelines/v0.yaml
+    deps:
+    - path: data/chunks/c1/fixed512/chunks.jsonl
+      hash: md5
+      md5: d45b99c61899dc1e743ff6d73208d24f
+      size: 9330949
+    - path: src/hangar/core/vectors.py
+      hash: md5
+      md5: 2262b224cc3ff32feb69a4ff2e7b64cb
+      size: 3130
+    - path: src/hangar/embedding
+      hash: md5
+      md5: 94923b187b126c5d7919c8eddbdb4880.dir
+      size: 7345
+      nfiles: 3
+    params:
+      configs/pipelines/v0.yaml:
+        embedding:
+          type: sentence_transformers
+          model: BAAI/bge-m3
+          revision: 5617a9f61b028005a4858fdac845db406aefb181
+          output: dense
+          batch_size: 16
+          normalize: true
+    outs:
+    - path: data/vectors/c1/fixed512/bge-m3-dense
+      hash: md5
+      md5: b150d913f68eb666ca571e73f51db59e.dir
+      size: 15551528
+      nfiles: 2

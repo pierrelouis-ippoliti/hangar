@@ -89,8 +89,8 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
-- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, and only `chunking` and `pipelines` import tokenizers and huggingface_hub. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
-- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for sentence-transformers, Qdrant and Mistral (#21, #22 and #25).
+- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, only `chunking` and `pipelines` import tokenizers and huggingface_hub, and only `embedding` and `pipelines` import sentence-transformers, transformers and torch. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
+- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for Qdrant and Mistral (#22 and #25).
 
 ## Commands and logs
 
@@ -203,7 +203,44 @@ The `chunk` DVC stage depends on `data/parsed/c1`, the chunk model and the chunk
 
 ### Embed
 
-To be written in #21.
+The embed stage turns each chunk into one vector with the dense output of BGE-M3, through sentence-transformers. Its sparse and multi-vector outputs wait for v3.
+
+- **Embedder interface** (`embedding.embedder.Embedder`): `embed_documents` for chunks and `embed_query` for questions, because some models encode them differently. BGE-M3 encodes both the same way. An embedder reports its model ID, revision, dimension, and whether its vectors are normalised.
+- **BGE-M3** (`embedding.st_embedder.SentenceTransformerEmbedder`): `BAAI/bge-m3` loaded at the commit hash in `embedding.revision`, with unit-length vectors of 1,024 values. The batch size comes from `embedding.batch_size`, and the device from the `HANGAR_DEVICE` setting (`cpu`, `cuda` or `mps`). The registry imports this module only when it builds the embedder, because sentence-transformers loads torch, which takes seconds; the other commands start without it.
+- **Only the pinned weights are fetched.** The pinned revision has only `pytorch_model.bin`. After loading such a file, transformers starts a thread that downloads a safetensors copy (2.3 GB) from a bot's pull request on the model page, an unpinned branch. The model never loads that copy, so the adapter turns this off with `DISABLE_SAFETENSORS_CONVERSION`, and a model test checks it.
+- **Hash embedder** (`embedding.embedder.HashEmbedder`), for tests: a unit-length vector derived from the text's SHA-256. The same text always gives the same vector, and no model is loaded.
+- **Model contract test** (`tests/corpus/test_bge_m3_embedder.py`, marked `model`): 1,024 dimensions, unit length, and a match with a reference vector in `tests/fixtures/embedding/`, made once on the CPU. The match is close, not exact, because the CPU and the GPU round floats differently.
+
+**The command.** `hangar embed` runs the stage:
+
+1. It reads `<data folder>/chunks/<snapshot>/<chunker ID>/chunks.jsonl` and nothing else. A missing file asks for `hangar chunk`, and a chunk listed twice stops the run.
+2. It sends the chunks to the model 20 batches at a time, and logs its progress after each group.
+3. It checks that there is one vector per chunk and that every vector has the model's dimension.
+4. It writes `<data folder>/vectors/<snapshot>/<chunker ID>/<embedder ID>/vectors.parquet`, such as `vectors/c1/fixed512/bge-m3-dense/`. Each row (`core.vectors.VectorRecord`) holds the chunk ID, the model ID, its revision, and the vector as 32-bit floats: 4 KB per chunk. The embedder ID is the model name and its output, `bge-m3-dense`.
+5. Next to it, `meta.json` (`core.vectors.VectorsMeta`) records the configuration hash, the model, its revision, the dimension, normalisation, the SHA-256 of the chunks file, and the number of vectors. Like the other `meta.json` files, it holds no time, run ID or commit.
+
+The folder replaces the old one whole, like the other stages' outputs. On C1, the stage took 25 minutes on the laptop's NVIDIA T600 (4 GB) for the 3,627 chunks, with GPU memory at about 2.5 GiB for batch 16, and writes a 15.6 MB file. On the CPU, it would take about an hour.
+
+The `embed` DVC stage depends on the chunks file, the vector models, the embedding code and the `embedding` settings. Unlike the other stages, its output uses DVC's cache: the vectors hold no document text, and they are slow to rebuild.
+
+**Running it on a notebook GPU.** The stage reads only the chunks file and writes only the vectors folder, so it can run on a borrowed GPU, such as a Kaggle or Modal notebook, while the other stages stay on the laptop:
+
+1. On the laptop, run `uv run hangar chunk`, then upload `data/chunks/c1/fixed512/chunks.jsonl` to the notebook, for example as a private Kaggle dataset. The chunks hold the documents' text, so keep it private.
+2. In the notebook, with a GPU and internet access turned on, install Hangar at the commit the laptop uses, with the locked dependency versions:
+
+   ```bash
+   git clone https://github.com/pierrelouis-ippoliti/hangar.git
+   cd hangar
+   git checkout <commit>
+   pip install uv
+   uv sync --locked --no-dev
+   ```
+
+   `uv sync --locked` installs the versions in `uv.lock`. `pip install` would ignore the lock file and could pick other versions of torch and sentence-transformers.
+3. Copy the chunks file to `data/chunks/c1/fixed512/chunks.jsonl` inside the clone, then run `HANGAR_DEVICE=cuda uv run hangar embed`.
+4. Download the folder `data/vectors/c1/fixed512/bge-m3-dense/` and put it at the same place on the laptop.
+5. Check that `chunks_sha256` in its `meta.json` equals `sha256sum data/chunks/c1/fixed512/chunks.jsonl` on the laptop, so the vectors belong to these chunks.
+6. Run `uv run dvc commit embed`. DVC records the folder as the stage's output, so `dvc repro` doesn't run the stage again.
 
 ### Index
 

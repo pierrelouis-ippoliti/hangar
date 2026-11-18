@@ -10,6 +10,7 @@ from hangar.chunking.fixed import FixedTokenChunker
 from hangar.chunking.hf_tokenizer import HfTokenCounter
 from hangar.core.config import ChunkingConfig, EmbeddingConfig, ParsingConfig
 from hangar.core.corpus import DocumentFormat
+from hangar.embedding.embedder import Embedder
 from hangar.parsing.car import CarXmlParser
 from hangar.parsing.parser import Parser
 from hangar.parsing.pdf import PdfPageParser
@@ -51,3 +52,24 @@ def build_chunker(chunking: ChunkingConfig, embedding: EmbeddingConfig) -> Chunk
     counter = HfTokenCounter.from_hub(embedding.model, embedding.revision)
 
     return FixedTokenChunker(counter, chunking)
+
+
+def build_embedder(config: EmbeddingConfig, device: str) -> Embedder:
+    """
+    Build the embedder, loading its model at the pinned revision.
+
+    The model is downloaded the first time, then read from the Hugging Face
+    cache.
+
+    Args:
+        config: The embedding section of the pipeline configuration.
+        device: Where the model runs, from the environment settings.
+
+    Returns:
+        The sentence-transformers embedder.
+    """
+    # Imported here, not at the top: sentence-transformers loads torch,
+    # which takes seconds, and only the commands that embed need it.
+    from hangar.embedding.st_embedder import SentenceTransformerEmbedder
+
+    return SentenceTransformerEmbedder(config, device)

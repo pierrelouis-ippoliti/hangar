@@ -21,6 +21,7 @@ from hangar.observability.logs import (
 from hangar.pipelines.chunk import run_chunk
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.doctor import run_checks
+from hangar.pipelines.embed import run_embed
 from hangar.pipelines.fetch import run_fetch
 from hangar.pipelines.parse import run_parse
 from hangar.pipelines.settings import Settings, load_settings
@@ -94,6 +95,11 @@ def _run(command: str, settings: Settings, config: PipelineConfig) -> int:
 
     if command == "chunk":
         run_chunk(settings, config)
+
+        return 0
+
+    if command == "embed":
+        run_embed(settings, config)
 
         return 0
 

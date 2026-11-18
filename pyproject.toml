@@ -7,10 +7,13 @@ requires-python = ">=3.12"
 dependencies = [
     "huggingface-hub>=2.4.0",
     "lxml>=6",
+    "numpy>=2.5.5",
+    "pyarrow>=26.0.1",
     "pydantic>=2.14.2",
     "pydantic-settings>=2.16.2",
     "pypdfium2>=5.14",
     "pyyaml>=6.0.3",
+    "sentence-transformers>=6.3.0",
     "tokenizers>=0.23.3",
 ]
 
@@ -69,6 +72,12 @@ init_typed = true
 # parser turns what it reads into str at once.
 [[tool.mypy.overrides]]
 module = ["pypdfium2", "pypdfium2.*"]
+ignore_missing_imports = true
+
+# pyarrow ships no type information either. Only the vectors file uses it,
+# and its rows are validated as VectorRecord when read.
+[[tool.mypy.overrides]]
+module = ["pyarrow", "pyarrow.*"]
 ignore_missing_imports = true
 
 [tool.importlinter]
@@ -141,6 +150,22 @@ ignore_imports = [
     "hangar.chunking.** -> huggingface_hub",
     "hangar.pipelines.** -> tokenizers",
     "hangar.pipelines.** -> huggingface_hub",
+]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Only embedding and pipelines import torch and its model libraries"
+type = "forbidden"
+source_modules = ["hangar"]
+forbidden_modules = ["sentence_transformers", "transformers", "torch"]
+ignore_imports = [
+    "hangar.embedding.** -> sentence_transformers",
+    "hangar.embedding.** -> transformers",
+    "hangar.embedding.** -> torch",
+    "hangar.pipelines.** -> sentence_transformers",
+    "hangar.pipelines.** -> transformers",
+    "hangar.pipelines.** -> torch",
 ]
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true
