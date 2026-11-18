@@ -8,9 +8,15 @@ Docling parser of v2, touches one entry here and one configuration file.
 from hangar.chunking.chunker import Chunker
 from hangar.chunking.fixed import FixedTokenChunker
 from hangar.chunking.hf_tokenizer import HfTokenCounter
-from hangar.core.config import ChunkingConfig, EmbeddingConfig, ParsingConfig
+from hangar.core.config import (
+    ChunkingConfig,
+    EmbeddingConfig,
+    IndexConfig,
+    ParsingConfig,
+)
 from hangar.core.corpus import DocumentFormat
 from hangar.embedding.embedder import Embedder
+from hangar.indexing.index import VectorIndex
 from hangar.parsing.car import CarXmlParser
 from hangar.parsing.parser import Parser
 from hangar.parsing.pdf import PdfPageParser
@@ -73,3 +79,25 @@ def build_embedder(config: EmbeddingConfig, device: str) -> Embedder:
     from hangar.embedding.st_embedder import SentenceTransformerEmbedder
 
     return SentenceTransformerEmbedder(config, device)
+
+
+def build_index(config: IndexConfig, url: str, name: str) -> VectorIndex:
+    """
+    Build the vector index for one collection on the Qdrant server.
+
+    Args:
+        config: The index section of the pipeline configuration.
+        url: The Qdrant server, from the environment settings.
+        name: The collection name.
+
+    Returns:
+        The Qdrant index. It compares vectors with cosine distance, the
+        only distance ``config.distance`` accepts in v0.
+    """
+    # Imported here, not at the top: qdrant-client takes half a second to
+    # import, and only the commands that use the index need it.
+    from qdrant_client import QdrantClient
+
+    from hangar.indexing.qdrant import QdrantIndex
+
+    return QdrantIndex(QdrantClient(url=url), name)
