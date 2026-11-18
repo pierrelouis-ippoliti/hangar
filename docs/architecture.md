@@ -89,8 +89,8 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 - **Layers:** the order above. Packages that don't exist yet are optional, so the contract already holds and starts checking each package as soon as it appears.
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
-- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, only `chunking` and `pipelines` import tokenizers and huggingface_hub, and only `embedding` and `pipelines` import sentence-transformers, transformers and torch. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
-- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for Qdrant and Mistral (#22 and #25).
+- **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, only `chunking` and `pipelines` import tokenizers and huggingface_hub, only `embedding` and `pipelines` import sentence-transformers, transformers and torch, and only `indexing` and `pipelines` import qdrant-client. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
+- **Still to add:** the rule that limits `retrieval` to `embedding` and `indexing` (#23), and the same adapter rule for Mistral (#25).
 
 ## Commands and logs
 
@@ -244,7 +244,29 @@ The `embed` DVC stage depends on the chunks file, the vector models, the embeddi
 
 ### Index
 
-To be written in #22.
+The index stage loads the chunks and their vectors into one Qdrant collection, which the answering path searches ([ADR-0001](adr/0001-qdrant-vector-store.md)).
+
+- **Collection name** (`indexing.naming.collection_name`): the snapshot, the chunker and the embedder, joined by `__`: `c1__fixed512__bge-m3-dense`. Vectors from two chunkers or two models never share a collection. A part that is empty or contains `__` is refused, so a name always splits back into its parts.
+- **Vector index interface** (`indexing.index.VectorIndex`): `recreate` deletes the collection and creates it empty, `check` verifies that it exists with the right dimension, `upsert` stores chunks with their vectors, `search` returns the k closest chunks with their scores, optionally filtered on payload fields, and `count` counts the points.
+- **Qdrant adapter** (`indexing.qdrant.QdrantIndex`), with cosine distance:
+  - A point's ID is its chunk ID read as a 64-bit number, so the same chunk always lands on the same point.
+  - Its payload is the whole chunk, text and passages included, so a search returns chunks without reading the chunk files.
+  - Filters are equalities on payload fields, such as `{"document_id": "tc-std-571"}`.
+  - Points are uploaded 256 at a time.
+  - Tests use `QdrantClient(":memory:")`, which runs the same client calls without a server.
+- **The registry** imports qdrant-client only when it builds the index, because it takes half a second to import.
+
+**The command.** `hangar index` runs the stage:
+
+1. It reads `chunks.jsonl` and the vectors folder. A missing file asks for `hangar chunk` or `hangar embed`.
+2. It checks that the vectors' `meta.json` names the SHA-256 of this chunks file. Otherwise the vectors were made from other chunks, such as an older chunking or a vectors folder copied from a notebook, and the run stops.
+3. It checks that chunks and vectors match one to one: the same number, no chunk with two vectors, no vector without its chunk.
+4. It deletes the collection and builds it again, then checks that the point count equals the chunk count ([ADR-0008](adr/0008-rebuild-the-collection-on-every-index-run.md)). Running it twice leaves the same points.
+5. It writes `results/<run name>/index-manifest.json`, which is committed (`indexing.manifest.IndexManifest`). The manifest records the collection, the snapshot, the chunker, the embedder with its revision and dimension, the distance, the point count, the Qdrant version, the configuration hash, and the SHA-256 of the chunks and vectors files. Like the parse report, it holds no time, run ID or commit; the build time is in the run's log.
+
+On C1, Qdrant builds the 3,627 points in about a second.
+
+The `index` DVC stage depends on the chunks file, the vectors folder, the indexing code, and the `index` and `run.name` settings. The collection lives in a Docker volume that DVC can't see, so the stage has `always_changed: true`: every `dvc repro` rebuilds it, and a wiped volume comes back. The manifest is the same on every run with the same inputs, so later stages don't rerun. It is in git, so DVC doesn't cache it. The stage needs Qdrant running (`make qdrant-up`).
 
 ### Retrieve
 

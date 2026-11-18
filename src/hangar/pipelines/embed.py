@@ -4,11 +4,12 @@ import logging
 import time
 from pathlib import Path
 
-from hangar.core.chunks import Chunk, chunker_id
+from hangar.core.chunks import chunker_id
 from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.vectors import EmbedderInfo, VectorRecord, VectorsMeta, embedder_id
 from hangar.embedding.embedder import Embedder, EmbedError
 from hangar.files import file_sha256, replace_folder, write_text
+from hangar.pipelines.chunk_file import read_chunks
 from hangar.pipelines.provenance import code_version
 from hangar.pipelines.registry import build_embedder
 from hangar.pipelines.settings import Settings
@@ -46,9 +47,9 @@ def run_embed(
         What the run wrote: its input, its embedder and its count.
 
     Raises:
-        EmbedError: If the chunks file is missing or lists a chunk twice,
-            or the embedder returns too few vectors or vectors of the wrong
-            dimension.
+        ChunkError: If the chunks file lists a chunk twice.
+        EmbedError: If the chunks file is missing, or the embedder returns
+            too few vectors or vectors of the wrong dimension.
     """
     snapshot, chunker = config.corpus.snapshot, chunker_id(config.chunking)
     chunks_path = settings.data_dir / "chunks" / snapshot / chunker / "chunks.jsonl"
@@ -58,7 +59,7 @@ def run_embed(
             f"{snapshot}/{chunker}: {chunks_path} is missing; run hangar chunk first"
         )
 
-    chunks = _read_chunks(chunks_path)
+    chunks = read_chunks(chunks_path)
     logger.info("read %s: %d chunks", chunks_path, len(chunks))
     logger.info("code at %s", code_version(Path.cwd()))
 
@@ -109,22 +110,6 @@ def run_embed(
     logger.info("wrote %s: %d vectors", vectors_dir, meta.vectors)
 
     return meta
-
-
-def _read_chunks(path: Path) -> list[Chunk]:
-    chunks = []
-    seen = set()
-
-    for line in path.read_text(encoding="utf-8").splitlines():
-        chunk = Chunk.model_validate_json(line)
-
-        if chunk.id in seen:
-            raise EmbedError(f"{chunk.id}: the chunk is listed more than once")
-
-        seen.add(chunk.id)
-        chunks.append(chunk)
-
-    return chunks
 
 
 def _embed(embedder: Embedder, texts: list[str], batch_size: int) -> list[list[float]]:

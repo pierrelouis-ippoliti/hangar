@@ -13,6 +13,7 @@ dependencies = [
     "pydantic-settings>=2.16.2",
     "pypdfium2>=5.14",
     "pyyaml>=6.0.3",
+    "qdrant-client>=1.20",
     "sentence-transformers>=6.3.0",
     "tokenizers>=0.23.3",
 ]
@@ -166,6 +167,18 @@ ignore_imports = [
     "hangar.pipelines.** -> sentence_transformers",
     "hangar.pipelines.** -> transformers",
     "hangar.pipelines.** -> torch",
+]
+unmatched_ignore_imports_alerting = "none"
+allow_indirect_imports = true
+
+[[tool.importlinter.contracts]]
+name = "Only indexing and pipelines import qdrant_client"
+type = "forbidden"
+source_modules = ["hangar"]
+forbidden_modules = ["qdrant_client"]
+ignore_imports = [
+    "hangar.indexing.** -> qdrant_client",
+    "hangar.pipelines.** -> qdrant_client",
 ]
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true

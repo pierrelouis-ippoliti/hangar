@@ -29,7 +29,7 @@ uv run hangar doctor  # check Python, Qdrant, the API key, disk space and the mo
 make qdrant-down    # stop it; its data is kept in a Docker volume
 ```
 
-`hangar --help` lists one subcommand per stage. `doctor`, `fetch`, `parse`, `chunk` and `embed` work so far: `uv run hangar fetch` downloads the documents into `data/raw` and checks their hashes, `uv run hangar parse` turns them into passages in `data/parsed/c1` and writes `results/v0/parse-report.json`, `uv run hangar chunk` splits them into chunks of 512 tokens in `data/chunks/c1/fixed512`, and `uv run hangar embed` turns each chunk into a BGE-M3 vector in `data/vectors/c1/fixed512/bge-m3-dense`. The others (`hangar index`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
+`hangar --help` lists one subcommand per stage. `doctor`, `fetch`, `parse`, `chunk`, `embed` and `index` work so far: `uv run hangar fetch` downloads the documents into `data/raw` and checks their hashes, `uv run hangar parse` turns them into passages in `data/parsed/c1` and writes `results/v0/parse-report.json`, `uv run hangar chunk` splits them into chunks of 512 tokens in `data/chunks/c1/fixed512`, `uv run hangar embed` turns each chunk into a BGE-M3 vector in `data/vectors/c1/fixed512/bge-m3-dense`, and `uv run hangar index` loads them into the Qdrant collection `c1__fixed512__bge-m3-dense` (start Qdrant first with `make qdrant-up`). The others (`hangar search`, …, `hangar ask`) arrive in the next milestones. `make reproduce` will then rebuild everything from a clean clone.
 
 ## Versions
 

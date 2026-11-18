@@ -77,3 +77,25 @@ stages:
           - embedding
     outs:
       - data/vectors/c1/fixed512/bge-m3-dense
+
+  # Load the chunks and their vectors into the Qdrant collection
+  # c1__fixed512__bge-m3-dense, deleting and rebuilding it (ADR-0008). The
+  # collection lives in a Docker volume DVC can't see, so the stage runs on
+  # every repro (always_changed): a wiped volume is rebuilt in seconds. The
+  # manifest is the same on every run with the same inputs, so later stages
+  # don't rerun. It is committed to git, so DVC doesn't cache it. Needs
+  # Qdrant running: make qdrant-up.
+  index:
+    cmd: hangar index --config configs/pipelines/v0.yaml
+    always_changed: true
+    deps:
+      - data/chunks/c1/fixed512/chunks.jsonl
+      - data/vectors/c1/fixed512/bge-m3-dense
+      - src/hangar/indexing
+    params:
+      - configs/pipelines/v0.yaml:
+          - index
+          - run.name
+    outs:
+      - results/v0/index-manifest.json:
+          cache: false

@@ -66,7 +66,7 @@ Rules that cut across files:
 - Claude writes the code; the maintainer reviews every pull request. Explain each change in clear, plain language in the PR description.
 - One short branch per issue, named `v<version>/<issue>-<slug>` (for example `v0/2-uv-skeleton`), squash-merged into `main` through a pull request. One pull request per issue.
 - Conventional Commits: `feat`, `fix`, `docs`, `test`, `chore`.
-- Decision records (ADR-0001 to ADR-0007) go in `docs/adr/`, each written in the milestone whose issue asks for it.
+- Decision records (ADR-0001 to ADR-0008) go in `docs/adr/`, each written in the milestone whose issue asks for it.
 
 ## Versions, tags and releases
 

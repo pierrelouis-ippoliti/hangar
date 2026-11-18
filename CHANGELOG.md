@@ -10,6 +10,7 @@ Added:
 
 - The fixed-token chunker with BGE-M3's tokenizer, `hangar chunk` and its DVC stage, and ADR-0006 on counting tokens with the embedder's tokenizer (#20).
 - The BGE-M3 dense embedder through sentence-transformers, the hash embedder for tests, `hangar embed` with its Parquet vectors file and its DVC stage, and how to run it on a notebook GPU (#21).
+- The Qdrant vector index, collection naming, `hangar index` with the committed index manifest `results/v0/index-manifest.json` and its DVC stage, and ADR-0008 on rebuilding the collection on every run (#22).
 
 ### 0.0.0a2 · M2 Parsing (2026-11-14)
 
