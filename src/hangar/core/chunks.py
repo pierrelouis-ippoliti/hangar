@@ -11,6 +11,7 @@ the chunker changes.
 """
 
 import hashlib
+from collections.abc import Sequence
 from typing import Annotated, Self
 
 from pydantic import (
@@ -24,7 +25,7 @@ from pydantic import (
 
 from hangar.core.config import ChunkingConfig, CommitHash
 from hangar.core.corpus import DOCUMENT_ID_PATTERN, SHA256_PATTERN
-from hangar.core.parsed import Location
+from hangar.core.parsed import Location, PageLocation
 
 # 16 hex characters are 64 bits: a collision among a few million chunks is
 # very unlikely, and the ID still fits in a Qdrant point ID.
@@ -89,6 +90,45 @@ def chunker_id(config: ChunkingConfig) -> str:
         name += f"-o{config.overlap}"
 
     return name
+
+
+def describe_passages(passages: Sequence[PassageRef]) -> str:
+    """
+    Name the pages or sections a chunk covers, for a reader.
+
+    A page shows its index, and its printed label in brackets when the PDF
+    has one. A section shows ``§`` and its number, and the text before the
+    first numbered section shows as ``front matter``.
+
+    Args:
+        passages: The passages, in text order. At least one.
+
+    Returns:
+        The first passage, such as ``p. 323 (7-79)`` or ``§ 571.10``, or the
+        first and last joined by ``to`` when there are several, such as
+        ``p. 323 (7-79) to p. 324 (7-80)``.
+    """
+    first, last = passages[0], passages[-1]
+
+    if first == last:
+        return _describe_passage(first)
+
+    return f"{_describe_passage(first)} to {_describe_passage(last)}"
+
+
+def _describe_passage(passage: PassageRef) -> str:
+    location = passage.location
+
+    if isinstance(location, PageLocation):
+        if location.page_label is None:
+            return f"p. {location.page_index}"
+
+        return f"p. {location.page_index} ({location.page_label})"
+
+    if location.label is None:
+        return "front matter"
+
+    return f"§ {location.label}"
 
 
 class Chunk(ChunkModel):
