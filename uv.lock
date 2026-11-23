@@ -1583,7 +1583,7 @@ wheels = [
 
 [[package]]
 name = "hangar"
-version = "0.0.0a3"
+version = "0.0.0a4.dev0"
 source = { editable = "." }
 dependencies = [
     { name = "huggingface-hub" },

@@ -3,9 +3,8 @@
 import logging
 from collections.abc import Sequence
 
-from hangar.core.chunks import PassageRef, chunker_id
+from hangar.core.chunks import chunker_id, describe_passages
 from hangar.core.config import PipelineConfig
-from hangar.core.parsed import PageLocation
 from hangar.core.retrieval import ScoredChunk
 from hangar.core.vectors import embedder_id
 from hangar.indexing.naming import collection_name
@@ -82,7 +81,7 @@ def format_results(results: Sequence[ScoredChunk]) -> str:
 
     for result in results:
         chunk = result.chunk
-        location = _describe_passages(chunk.passages)
+        location = describe_passages(chunk.passages)
         blocks.append(
             f"{result.rank}. {result.score:.3f}  {chunk.document_id}, {location}\n"
             f"   {_excerpt(chunk.text)}"
@@ -101,30 +100,6 @@ def _configured_retriever(settings: Settings, config: PipelineConfig) -> Retriev
     index.check(embedder.dimension)
 
     return build_retriever(config.retrieval, embedder, index)
-
-
-def _describe_passages(passages: Sequence[PassageRef]) -> str:
-    first, last = passages[0], passages[-1]
-
-    if first == last:
-        return _describe_passage(first)
-
-    return f"{_describe_passage(first)} to {_describe_passage(last)}"
-
-
-def _describe_passage(passage: PassageRef) -> str:
-    location = passage.location
-
-    if isinstance(location, PageLocation):
-        if location.page_label is None:
-            return f"p. {location.page_index}"
-
-        return f"p. {location.page_index} ({location.page_label})"
-
-    if location.label is None:
-        return "front matter"
-
-    return f"§ {location.label}"
 
 
 def _excerpt(text: str) -> str:
