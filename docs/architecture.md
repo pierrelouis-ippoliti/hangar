@@ -298,7 +298,27 @@ Each search loads the 2.3 GB model again, which takes most of its 9 seconds on t
 
 ### Generate
 
-To be written in #24 to #28.
+Generation turns a question and its chunks into a cited answer. The language model client, the citation parser, the records and `hangar ask` are still to be written, in #25 to #28.
+
+**The prompt.** A prompt file, such as `prompts/answer-v0.md`, has three parts, each starting with a level-1 heading on its own line:
+
+- `# System`: the instructions, sent as the system message.
+- `# User`: the user message, with the placeholders `$question` and `$sources`.
+- `# Source`: how one source is written into `$sources`, with `$number`, `$label`, `$title`, `$date`, `$location` and `$text`.
+
+The placeholders follow Python's `string.Template`, so a literal dollar sign is written `$$`. The prompt file holds all of the wording, including how each source looks, so a new prompt needs no code change. Each part must use all of its placeholders and no others, and a broken file stops the run with an error that names the file and the problem.
+
+The v0 prompt asks for a numbered marker such as `[2]` after every claim, and for Transport Canada requirements to be quoted word for word. It also asks the model to say when the sources don't cover the question. Each source sits in a `<source>` element that the prompt calls quoted material, and the model is told to ignore any instruction inside it. The study-aid notice is not left to the model: `hangar ask` adds it after every answer (#28).
+
+**Prompt files are never edited in place.** Every answer record names its prompt version, so a changed prompt is a new file, such as `answer-v1.md`. A unit test pins the SHA-256 of each prompt file, so an edit in place fails CI.
+
+**The renderer** (`generation.prompt`). `load_prompt_template(folder, version)` reads and checks a prompt file. Its `render` method takes the question, the scored chunks and the manifest entries of their documents. It returns a `core.prompts.RenderedPrompt`:
+
+- the prompt version;
+- the messages: the system message, then the user message;
+- the source map: one `Source` per chunk, numbered from 1 in rank order, with the chunk ID, the document ID and the passages the chunk covers. The citation parser (#26) uses it to turn a marker into a document and its pages or sections.
+
+Each source is labelled with its authority and type, such as "FAA handbook guidance" or "Transport Canada advisory circular". It also shows the document's title, its content date and where the chunk sits, written the same way as in `hangar search`: `p. 323 (7-79)` or `§ 571.10`. A chunk whose document is missing from the manifest stops the run.
 
 ### Evaluate
 
