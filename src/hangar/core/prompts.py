@@ -11,7 +11,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, PositiveInt
 
-from hangar.core.chunks import PassageRef
+from hangar.core.chunks import CHUNK_ID_LENGTH, PassageRef
 from hangar.core.corpus import DOCUMENT_ID_PATTERN
 
 
@@ -49,7 +49,7 @@ class Source(PromptModel):
     """
 
     number: PositiveInt
-    chunk_id: str = Field(min_length=1)
+    chunk_id: str = Field(pattern=rf"^[0-9a-f]{{{CHUNK_ID_LENGTH}}}$")
     document_id: str = Field(pattern=DOCUMENT_ID_PATTERN)
     passages: tuple[PassageRef, ...] = Field(min_length=1)
 

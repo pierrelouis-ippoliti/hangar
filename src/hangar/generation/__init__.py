@@ -1,6 +1,6 @@
 """
 The generation step: from a question and its chunks to a cited answer.
 
-It renders the prompt from a versioned file in ``prompts/``, calls the
-language model and parses the citation markers in its answer.
+For now it renders the prompt from a versioned file in ``prompts/``. The
+language model client and the citation parser join it in #25 and #26.
 """

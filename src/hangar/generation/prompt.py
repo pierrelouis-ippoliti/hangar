@@ -224,13 +224,13 @@ def _check_part(name: str, body: str) -> Template:
     missing = sorted(expected - used)
 
     if unknown:
-        raise ValueError(f"'# {name}' has unknown {_placeholders(unknown)}")
+        raise ValueError(f"'# {name}' has unknown {_format_placeholders(unknown)}")
 
     if missing:
-        raise ValueError(f"'# {name}' is missing {_placeholders(missing)}")
+        raise ValueError(f"'# {name}' is missing {_format_placeholders(missing)}")
 
     return template
 
 
-def _placeholders(names: list[str]) -> str:
+def _format_placeholders(names: list[str]) -> str:
     return ", ".join(f"${name}" for name in names)
