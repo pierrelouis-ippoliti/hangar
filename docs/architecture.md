@@ -56,6 +56,7 @@ All the code lives in one package, `src/hangar/`, split by stage. A package fold
 | `core` | Domain types, configuration models, identifiers, provenance, errors |
 | `observability` | Logging set-up, run recorder, cost table |
 | `files` | Reading the YAML files that configure Hangar, such as the manifest and the pipeline file, file hashes, and replacing a stage's output folder whole |
+| `pacing` | The rate limiter that spaces out requests to a remote service, shared by the downloader and the Mistral client |
 | `corpus` | Manifest loading and validation, downloader, hash checks |
 | `parsing` | FAA PDF pages, CAR XML, Transport Canada HTML, normalisation, parse report |
 | `chunking` | Chunker interface, fixed-token chunker, token counter |
@@ -74,13 +75,14 @@ cli
 └── pipelines
     └── retrieval
         └── corpus | parsing | chunking | embedding | indexing | generation | evaluation
-            └── observability | files
+            └── observability | files | pacing
                 └── core
 ```
 
 - `core` imports nothing else from `hangar` and does no I/O.
 - `files` imports only `core`. It reads YAML files for the stages and `pipelines`, which then pass the content to `core` to validate.
-- The stage packages import `core`, `observability` and `files`, never each other. The one exception is `retrieval`, which may use the embedding and indexing interfaces because it combines them.
+- `pacing` imports nothing else from `hangar`. It only waits, so it needs no domain type.
+- The stage packages import `core`, `observability`, `files` and `pacing`, never each other. The one exception is `retrieval`, which may use the embedding and indexing interfaces because it combines them.
 - Adapters for Qdrant, Mistral, sentence-transformers and pypdfium2 live inside their stage package. Only `pipelines` constructs them, through a registry keyed by the type names in the configuration. Swapping one of them therefore touches one registry entry and one configuration file.
 - `pipelines` imports the stages and `core`. `cli` imports only `pipelines` and `observability`.
 - Every layer may use `observability`.
