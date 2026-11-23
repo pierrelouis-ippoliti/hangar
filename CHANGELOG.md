@@ -4,6 +4,12 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
+### Unreleased · M4 Answering
+
+Added:
+
+- The v0 prompt `prompts/answer-v0.md`, which asks for a numbered citation after every claim and labels each source with its authority, type and content date, and the prompt renderer, which returns the messages and the numbered source map. A test pins each prompt file's hash, so prompts are never edited in place (#24).
+
 ### 0.0.0a3 · M3 Chunk, embed, index (2026-11-18)
 
 The last three build stages: `hangar chunk`, `hangar embed` and `hangar index` turn the parsed C1 text into 3,627 chunks of up to 512 BGE-M3 tokens, embed them with BGE-M3 and load them into Qdrant. `hangar search` returns the top 5 chunks for a question.
