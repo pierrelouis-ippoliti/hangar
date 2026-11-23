@@ -1,19 +1,5 @@
-from hangar.pacing import RateLimiter
-
-
-class FakeTime:
-    """A clock that moves only when the code under test sleeps, or a test says so."""
-
-    def __init__(self) -> None:
-        self.now = 1000.0
-        self.sleeps: list[float] = []
-
-    def clock(self) -> float:
-        return self.now
-
-    def sleep(self, seconds: float) -> None:
-        self.sleeps.append(seconds)
-        self.now += seconds
+from hangar.pacing import RateLimiter, backoff_delay
+from tests.fakes import FakeTime
 
 
 def limiter(time: FakeTime, interval: float = 1.0) -> RateLimiter:
@@ -69,3 +55,9 @@ def test_each_turn_counts_from_the_end_of_the_previous_wait() -> None:
     pacer.wait_for_turn()
 
     assert time.sleeps == [1.0, 1.0]
+
+
+def test_the_backoff_doubles_with_each_retry() -> None:
+    delays = [backoff_delay(2.0, retry) for retry in (1, 2, 3)]
+
+    assert delays == [2.0, 4.0, 8.0]

@@ -14,6 +14,7 @@ from hangar.corpus.download import (
     LocalCopyDownloader,
 )
 from hangar.files import file_sha256
+from tests.fakes import FakeTime
 
 USER_AGENT = "hangar-tests/1.0"
 ETAG = '"v1"'
@@ -85,21 +86,6 @@ def site() -> Iterator[FakeSite]:
     yield fake
     server.shutdown()
     server.server_close()
-
-
-class FakeTime:
-    """A clock that moves only when the code under test sleeps."""
-
-    def __init__(self) -> None:
-        self.now = 1000.0
-        self.sleeps: list[float] = []
-
-    def clock(self) -> float:
-        return self.now
-
-    def sleep(self, seconds: float) -> None:
-        self.sleeps.append(seconds)
-        self.now += seconds
 
 
 def downloader(time: FakeTime, **changes: float) -> HttpDownloader:

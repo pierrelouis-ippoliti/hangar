@@ -1,13 +1,31 @@
 """
-Spacing out requests to a remote service.
+Spacing out and retrying requests to a remote service.
 
 The fetch stage and the Mistral client both send requests to services that
-limit how often they may be called. They share this module, which sits
-above ``core`` and below the stages, so neither keeps its own copy.
+limit how often they may be called, and both retry the same answers with
+the same growing wait. They share this module, which sits above ``core``
+and below the stages, so neither keeps its own copy.
 """
 
 import time
 from collections.abc import Callable
+
+# Statuses that mean "try again later" rather than "this will never work".
+RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
+
+
+def backoff_delay(first_delay_seconds: float, retry: int) -> float:
+    """
+    Give the wait before a retry, doubling with each one.
+
+    Args:
+        first_delay_seconds: The wait before the first retry.
+        retry: Which retry is next: 1 for the first, 2 for the second.
+
+    Returns:
+        The wait in seconds.
+    """
+    return first_delay_seconds * 2.0 ** (retry - 1)
 
 
 class RateLimiter:

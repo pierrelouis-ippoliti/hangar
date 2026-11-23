@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import BinaryIO, Protocol
 
 from hangar.core.errors import HangarError
-from hangar.pacing import RateLimiter
+from hangar.pacing import RETRYABLE_STATUSES, RateLimiter, backoff_delay
 
 # Read, decode and hash files 1 MiB at a time, so a 205 MB PDF never sits
 # in memory.
@@ -28,9 +28,6 @@ CHUNK_BYTES = 1024 * 1024
 # Powerplant handbook, is 215 MB; the limit stops a runaway download or a
 # small gzip answer that would decode to gigabytes.
 MAX_DOWNLOAD_BYTES = 10**9
-
-# Statuses that mean "try again later" rather than "this will never work".
-RETRYABLE_STATUSES = frozenset({429, 500, 502, 503, 504})
 
 # Content-Encoding values the downloader can undo. The Wayback Machine sends
 # gzip even to a client that asks for none, so gzip must be handled.
@@ -147,7 +144,7 @@ class HttpDownloader:
 
         for attempt in range(1, self._attempts + 1):
             if attempt > 1:
-                self._sleep(self._backoff * 2 ** (attempt - 2))
+                self._sleep(backoff_delay(self._backoff, attempt - 1))
 
             self._limiter.wait_for_turn()
 
