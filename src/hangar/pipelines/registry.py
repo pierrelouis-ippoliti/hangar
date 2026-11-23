@@ -5,18 +5,24 @@ Only this module constructs the adapters, so swapping one, such as the
 Docling parser of v2, touches one entry here and one configuration file.
 """
 
+from pydantic import SecretStr
+
 from hangar.chunking.chunker import Chunker
 from hangar.chunking.fixed import FixedTokenChunker
 from hangar.chunking.hf_tokenizer import HfTokenCounter
 from hangar.core.config import (
     ChunkingConfig,
     EmbeddingConfig,
+    GenerationConfig,
     IndexConfig,
     ParsingConfig,
     RetrievalConfig,
 )
 from hangar.core.corpus import DocumentFormat
+from hangar.core.errors import ConfigError, FieldProblem
 from hangar.embedding.embedder import Embedder
+from hangar.generation.llm import LlmClient
+from hangar.generation.mistral import MistralClient
 from hangar.indexing.index import VectorIndex
 from hangar.parsing.car import CarXmlParser
 from hangar.parsing.parser import Parser
@@ -121,3 +127,27 @@ def build_retriever(
         The dense retriever, returning ``config.top_k`` chunks.
     """
     return DenseRetriever(embedder, index, top_k=config.top_k)
+
+
+def build_llm_client(config: GenerationConfig, api_key: SecretStr | None) -> LlmClient:
+    """
+    Build the language model client.
+
+    Args:
+        config: The generation section of the pipeline configuration.
+        api_key: The Mistral API key, from the environment settings. It is
+            never read from the pipeline file.
+
+    Returns:
+        The Mistral client, asking for ``config.model``.
+
+    Raises:
+        ConfigError: If the API key is not set.
+    """
+    if api_key is None:
+        raise ConfigError(
+            "the environment",
+            [FieldProblem("MISTRAL_API_KEY", "is not set. Add it to .env.")],
+        )
+
+    return MistralClient(config.model, api_key.get_secret_value())

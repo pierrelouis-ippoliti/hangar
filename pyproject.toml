@@ -201,6 +201,21 @@ ignore_imports = [
 unmatched_ignore_imports_alerting = "none"
 allow_indirect_imports = true
 
+# The Mistral adapter calls the API with the standard library, so there is no
+# adapter library to fence in. The rule falls on the adapter module instead:
+# only pipelines builds it, and the rest of the code sees the LlmClient
+# interface. import-linter skips a source module that contains the forbidden
+# one, so "hangar" or "hangar.generation" alone would check nothing. The two
+# wildcards list every top-level package and every module of generation, new
+# ones included.
+[[tool.importlinter.contracts]]
+name = "Only pipelines imports the Mistral adapter"
+type = "forbidden"
+source_modules = ["hangar.*", "hangar.generation.*"]
+forbidden_modules = ["hangar.generation.mistral"]
+ignore_imports = ["hangar.pipelines.** -> hangar.generation.mistral"]
+allow_indirect_imports = true
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = ["--import-mode=importlib", "-m", "not model and not llm and not corpus"]

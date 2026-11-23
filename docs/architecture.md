@@ -56,7 +56,7 @@ All the code lives in one package, `src/hangar/`, split by stage. A package fold
 | `core` | Domain types, configuration models, identifiers, provenance, errors |
 | `observability` | Logging set-up, run recorder, cost table |
 | `files` | Reading the YAML files that configure Hangar, such as the manifest and the pipeline file, file hashes, and replacing a stage's output folder whole |
-| `pacing` | The rate limiter that spaces out requests to a remote service, shared by the downloader and the Mistral client |
+| `pacing` | The rate limiter, the retryable statuses and the backoff that the downloader and the Mistral client share |
 | `corpus` | Manifest loading and validation, downloader, hash checks |
 | `parsing` | FAA PDF pages, CAR XML, Transport Canada HTML, normalisation, parse report |
 | `chunking` | Chunker interface, fixed-token chunker, token counter |
@@ -93,7 +93,7 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 - **cli:** `cli` imports nothing but `pipelines` and `observability`.
 - **Adapter libraries:** only `parsing` and `pipelines` import pypdfium2 and lxml, only `chunking` and `pipelines` import tokenizers and huggingface_hub, only `embedding` and `pipelines` import sentence-transformers, transformers and torch, and only `indexing` and `pipelines` import qdrant-client. Each contract checks every module of `hangar` and exempts the allowed packages, so a new package is checked from its first file.
 - **retrieval:** `retrieval` may use the embedding and indexing interfaces, but no other stage and neither adapter module (`embedding.st_embedder`, `indexing.qdrant`). `pipelines` builds the adapters and passes them in.
-- **Still to add:** the same adapter rule for Mistral (#25).
+- **Mistral adapter:** the Mistral client calls the API with the standard library, so there is no library to fence in. Instead, only `pipelines` may import the adapter module, `generation.mistral`; the rest of the code sees the `LlmClient` interface.
 
 ## Commands and logs
 
@@ -300,7 +300,7 @@ Each search loads the 2.3 GB model again, which takes most of its 9 seconds on t
 
 ### Generate
 
-Generation turns a question and its chunks into a cited answer. The language model client, the citation parser, the records and `hangar ask` are still to be written, in #25 to #28.
+Generation turns a question and its chunks into a cited answer. The citation parser, the records and `hangar ask` are still to be written, in #26 to #28.
 
 **The prompt.** A prompt file, such as `prompts/answer-v0.md`, has three parts, each starting with a level-1 heading on its own line:
 
@@ -321,6 +321,16 @@ The v0 prompt asks for a numbered marker such as `[2]` after every claim, and fo
 - the source map: one `Source` per chunk, numbered from 1 in rank order, with the chunk ID, the document ID and the passages the chunk covers. The citation parser (#26) uses it to turn a marker into a document and its pages or sections.
 
 Each source is labelled with its authority and type, such as "FAA handbook guidance" or "Transport Canada advisory circular". It also shows the document's title, its content date and where the chunk sits, written the same way as in `hangar search`: `p. 323 (7-79)` or `§ 571.10`. A chunk whose document is missing from the manifest stops the run.
+
+**The language model client** (`generation.llm`). `LlmClient` is the interface: its `complete` method takes the messages, the temperature and the output token limit, and returns a `core.completions.Completion` with the text, the model ID the provider reports, the input and output token counts, the latency and the finish reason (`stop`, or `length` for an answer cut off at the limit). The latency is that of the request that succeeded, without the waits for the rate limit or the failed attempts. There are two clients:
+
+- **`MistralClient`** (`generation.mistral`) sends one POST to Mistral's chat completions endpoint with the standard library, asking for the dated model of the pipeline file, `mistral-small-2603`, at temperature 0 with at most 512 output tokens ([ADR-0007](adr/0007-mistral-small-4-through-the-api.md)).
+  - It leaves at least one second between requests, retries included, through `pacing.RateLimiter`, the limiter the downloader uses. The free tier allows one request per second.
+  - It retries 429, 500, 502, 503 and 504 answers and network errors, up to four attempts, waiting 2, 4, then 8 seconds, with the status list and backoff of `pacing` that the downloader uses too. Other answers, such as 401 for a wrong key, fail at once with Mistral's explanation.
+  - The registry builds it with the key from the environment settings (`MISTRAL_API_KEY`), never from the pipeline file. A missing key stops the command with an error that names the variable.
+- **`FakeLlmClient`**, for tests: it returns the same answer to every prompt, citing sources [1] and [2] by default, and counts words as tokens.
+
+A live test (`uv run pytest -m llm tests/llm`, local only) sends the v0 prompt to Mistral once and checks the reply's shape and token counts.
 
 ### Evaluate
 
