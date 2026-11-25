@@ -8,6 +8,7 @@ package.
 
 import logging
 import sys
+from datetime import UTC, datetime
 from pathlib import Path
 
 from hangar.core.config import PipelineConfig, config_hash
@@ -35,10 +36,12 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
     """
     Run one ``hangar`` subcommand as a logged run.
 
-    Reads the settings, starts a run with its own ID and log file
-    (``<data folder>/logs/<run ID>.jsonl``), reads the pipeline file, then
-    runs the command. Errors are logged rather than raised, so they go
-    through the same redaction as every other record.
+    Reads the settings and the pipeline file, starts a run with its own ID
+    and log file (``<data folder>/logs/<run ID>.jsonl``), then runs the
+    command. The run ID holds the config hash, so an unusable settings or
+    pipeline file is reported on the screen before the run starts. Errors
+    after that are logged rather than raised, so they go through the same
+    redaction as every other record.
 
     Args:
         command: The subcommand, such as ``doctor`` or ``seed run``.
@@ -51,12 +54,15 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
     """
     try:
         settings = load_settings()
+        config = load_pipeline_config(config_path)
     except ConfigError as error:
-        # Logging needs the settings, so this one goes straight to the screen.
+        # Logging needs the settings and the run ID, so these errors go
+        # straight to the screen.
         print(f"hangar: {error}", file=sys.stderr)
         return 1
 
-    run_id = new_run_id()
+    config_digest = config_hash(config)
+    run_id = new_run_id(config_digest, datetime.now(UTC))
     log_file = settings.data_dir / "logs" / f"{run_id}.jsonl"
     key = settings.mistral_api_key
 
@@ -69,8 +75,7 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
     with log_context(run_id=run_id, stage=command):
         try:
             logger.info("run ID %s, logging to %s", run_id, log_file)
-            config = load_pipeline_config(config_path)
-            logger.info("read %s, config hash %s", config_path, config_hash(config))
+            logger.info("read %s, config hash %s", config_path, config_digest)
 
             return _run(command, settings, config, question)
         except HangarError as error:
