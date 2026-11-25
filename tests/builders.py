@@ -9,12 +9,26 @@ import datetime
 from typing import Any
 
 from hangar.core.chunks import Chunk, PassageRef, chunk_id
+from hangar.core.citations import Citation
+from hangar.core.completions import Completion
 from hangar.core.corpus import DocumentSpec
+from hangar.core.costs import Cost
 from hangar.core.parsed import PageLocation, SectionLocation
+from hangar.core.provenance import CodeVersion
+from hangar.core.records import (
+    AnswerRecord,
+    ModelVersions,
+    RunRecord,
+    ScoredChunkRef,
+    StageTimings,
+    run_totals,
+)
 from hangar.core.retrieval import ScoredChunk
 
 DOCUMENT_ID = "example-handbook"
 CHUNKER_ID = "fixed512"
+RUN_ID = "20261125T120000Z-1a2b3c4d"
+STARTED_AT = datetime.datetime(2026, 11, 25, 12, 0, 0, tzinfo=datetime.UTC)
 
 
 def page(
@@ -150,3 +164,91 @@ def document_spec(**changes: Any) -> DocumentSpec:
     fields.update(changes)
 
     return DocumentSpec.model_validate(fields)
+
+
+def completion(
+    *, input_tokens: int = 900, output_tokens: int = 100, latency_seconds: float = 1.5
+) -> Completion:
+    """
+    A finished completion that cites source [1].
+    """
+    return Completion(
+        text="Torque the bolt to 25 inch-pounds [1].",
+        model_id="mistral-small-2603",
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        latency_seconds=latency_seconds,
+        finish_reason="stop",
+    )
+
+
+def citation(cited: Chunk, marker: int = 1) -> Citation:
+    """
+    A valid citation of the given chunk.
+    """
+    return Citation(
+        marker=marker,
+        valid=True,
+        chunk_id=cited.id,
+        document_id=cited.document_id,
+        passages=cited.passages,
+    )
+
+
+def answer_record(**changes: Any) -> AnswerRecord:
+    """
+    The record of an answer that cites its one retrieved chunk.
+
+    Args:
+        **changes: Field values that replace the defaults, such as
+            ``question_id="q-0001"`` or ``completion=completion(...)``.
+
+    Returns:
+        The validated answer record.
+    """
+    retrieved = chunk()
+    fields: dict[str, Any] = {
+        "run_id": RUN_ID,
+        "question_id": None,
+        "question": "How tight should the bolt be?",
+        "scored_chunks": (ScoredChunkRef.of(scored(retrieved)),),
+        "prompt_version": "answer-v0",
+        "completion": completion(),
+        "citations": (citation(retrieved),),
+        "timings": StageTimings(retrieval_seconds=0.25, generation_seconds=1.75),
+        "cost": Cost(free_tier_usd=0.0, list_price_usd=0.000195),
+    }
+    fields.update(changes)
+
+    return AnswerRecord.model_validate(fields)
+
+
+def run_record(**changes: Any) -> RunRecord:
+    """
+    The record of a clean 90-second run with one answer.
+
+    Args:
+        **changes: Field values that replace the defaults, such as
+            ``code=None``.
+
+    Returns:
+        The validated run record.
+    """
+    fields: dict[str, Any] = {
+        "run_id": RUN_ID,
+        "config_hash": "1a2b3c4d" + "0" * 56,
+        "code": CodeVersion(commit="0123456789" * 4, dirty=False),
+        "release": False,
+        "snapshot": "c1",
+        "models": ModelVersions(
+            embedding_model="BAAI/bge-m3",
+            embedding_revision="5617a9f61b028005a4858fdac845db406aefb181",
+            generation_model="mistral-small-2603",
+        ),
+        "started_at": STARTED_AT,
+        "ended_at": STARTED_AT + datetime.timedelta(seconds=90),
+        "totals": run_totals([answer_record()]),
+    }
+    fields.update(changes)
+
+    return RunRecord.model_validate(fields)

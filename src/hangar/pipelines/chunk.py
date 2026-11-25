@@ -9,7 +9,7 @@ from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.parsed import ParsedFile
 from hangar.files import file_sha256, replace_folder, write_text
 from hangar.observability.logs import log_context
-from hangar.pipelines.provenance import code_version
+from hangar.pipelines.provenance import describe_code_version
 from hangar.pipelines.registry import build_chunker
 from hangar.pipelines.settings import Settings
 
@@ -51,7 +51,7 @@ def run_chunk(
         )
 
     logger.info("read %s: %d parsed files", parsed_dir, len(paths))
-    logger.info("code at %s", code_version(Path.cwd()))
+    logger.info("code at %s", describe_code_version(Path.cwd()))
 
     chunker = chunker or build_chunker(config.chunking, config.embedding)
     chunks = [chunk for path in paths for chunk in _chunk_file(path, chunker)]

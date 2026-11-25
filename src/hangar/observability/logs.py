@@ -19,7 +19,6 @@ from contextlib import contextmanager
 from contextvars import ContextVar, Token
 from datetime import UTC, datetime
 from pathlib import Path
-from secrets import token_hex
 from typing import TextIO
 
 # Handlers installed by configure_logging carry this prefix in their name,
@@ -33,15 +32,27 @@ _stage: ContextVar[str | None] = ContextVar("hangar_stage", default=None)
 _document_id: ContextVar[str | None] = ContextVar("hangar_document_id", default=None)
 
 
-def new_run_id() -> str:
+# How many hex characters of the config hash a run ID keeps.
+RUN_ID_HASH_LENGTH = 8
+
+
+def new_run_id(config_hash: str, started_at: datetime) -> str:
     """
-    Create an ID for a new run.
+    Create the ID of a new run, shared by its log file and its run record.
+
+    Args:
+        config_hash: The hash of the run's pipeline configuration.
+        started_at: When the run started, with its time zone.
 
     Returns:
-        The start time in UTC followed by six random hex characters, such
-        as ``20261105T142233Z-3fa91c``. IDs sort by start time.
+        The start time in UTC followed by the first eight characters of
+        the config hash, such as ``20261105T142233Z-1a2b3c4d``. IDs sort by
+        start time, and two runs with the same config started in the same
+        second share an ID.
     """
-    return f"{datetime.now(UTC):%Y%m%dT%H%M%SZ}-{token_hex(3)}"
+    started_utc = started_at.astimezone(UTC)
+
+    return f"{started_utc:%Y%m%dT%H%M%SZ}-{config_hash[:RUN_ID_HASH_LENGTH]}"
 
 
 @contextmanager

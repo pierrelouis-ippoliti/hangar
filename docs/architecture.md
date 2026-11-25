@@ -53,8 +53,8 @@ All the code lives in one package, `src/hangar/`, split by stage. A package fold
 
 | Package | Holds |
 | --- | --- |
-| `core` | Domain types, configuration models, identifiers, provenance, errors |
-| `observability` | Logging set-up, run recorder, cost table |
+| `core` | Domain types, configuration models, identifiers, provenance, run and answer records, costs, errors |
+| `observability` | Logging set-up, run recorder |
 | `files` | Reading the YAML files that configure Hangar, such as the manifest and the pipeline file, file hashes, and replacing a stage's output folder whole |
 | `pacing` | The rate limiter, the retryable statuses and the backoff that the downloader and the Mistral client share |
 | `corpus` | Manifest loading and validation, downloader, hash checks |
@@ -99,15 +99,34 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 `hangar` has one subcommand per stage, plus `doctor`. Each takes `--config`, the pipeline file (`configs/pipelines/v0.yaml` by default). `cli` only parses the command line; `pipelines.commands` runs the command:
 
-1. It reads the environment settings and starts a run with its own ID, such as `20261105T142233Z-3fa91c`: the start time in UTC and six random hex characters.
-2. It reads the pipeline file and logs its path and configuration hash.
-3. It runs the command and returns the exit code: 0 on success, 1 on failure.
+1. It reads the environment settings and the pipeline file. An unusable file of either kind is reported on the screen, since no run has started yet.
+2. It starts a run with its own ID, such as `20261105T142233Z-1a2b3c4d`: the start time in UTC and the first eight characters of the configuration hash. The log file and the run record of an answering run share this ID. Two runs of the same configuration started in the same second get the same ID, and their logs go to one file.
+3. It logs the pipeline file's path and configuration hash, runs the command and returns the exit code: 0 on success, 1 on failure. A command that succeeds ends its log with its duration, so every stage records how long it ran.
 
 Every record goes to two places: a JSON lines file, `<data folder>/logs/<run ID>.jsonl`, and the screen, as readable lines. Each record carries the run ID, the stage and the document being worked on. Code logs through the standard library (`logging.getLogger(__name__)`), and a `log_context` block in `observability.logs` supplies those three values, so the code that logs never passes them along.
 
 The Mistral API key is replaced by `[REDACTED]` before any record is written, in messages, arguments and tracebacks alike, and in records from other libraries too. Errors are logged rather than left to print their own traceback, so they go through the same redaction.
 
 `hangar doctor` checks Python 3.12 or later, Qdrant's `/readyz` endpoint, that `MISTRAL_API_KEY` is set (without calling the API), 2 GB of free space for the data folder, and that the pinned embedding model is in the Hugging Face cache or can be downloaded there. It reports each check as pass or fail, and exits with 1 if any fails.
+
+## Run records
+
+The language model's output can vary even at temperature 0, so every answer is stored rather than assumed reproducible. An answering run, such as `hangar ask` or `hangar seed run`, keeps two kinds of record, both defined in `core.records`:
+
+- **Answer record**, one per question: the run ID, the seed question's ID (none for `hangar ask`), the question, a reference to each retrieved chunk (its ID, score, document ID and pages or sections, never its text), the prompt version, the completion with its token counts, the citations (invalid ones included), the retrieval and generation times, and the cost.
+- **Run record**, one per run: the run ID, the configuration hash, the git commit and dirty flag (none outside a git checkout), whether it was a release run, the snapshot, the embedding model and its revision, the language model's dated ID, the start and end times, and the totals over its answers: the number of answers, the input and output tokens, the cost, and the retrieval and generation times.
+
+Answer records are committed, and the documents are never redistributed ([ADR-0003](adr/0003-licences.md)), so a record keeps where each chunk is, not what it says; the chunk ID finds the text again in the chunks file.
+
+Times are in seconds. Retrieval time includes embedding the question. Generation time is the whole language model call, waits for the rate limit and retries included, so it can be longer than the completion's latency, which counts only the request that succeeded.
+
+**Cost** (`core.costs`). Tokens are priced from the `prices` table of the pipeline file, in US dollars per million tokens, keyed by model ID. Every cost has two figures: the free tier, which is zero in v0, and the list price, what the same tokens would cost at Mistral's published price. v9 compares the list price with the cost of a self-hosted model.
+
+**The recorder** (`observability.recorder`). `RunRecorder` is the interface, so v1 can add a recorder that sends the records to Weights & Biases. `FileRunRecorder` writes both kinds into a new folder of the run's own: each answer is appended to a JSON lines file, such as `seed-run.jsonl`, as soon as it is made, and the run record goes to `run.json` at the end. It refuses a folder that already exists, naming it in the error, so two runs that got the same ID in the same second can't overwrite each other. Tests point it at a temporary folder.
+
+**The run** (`pipelines.runs.AnsweringRun`) ties these together: it records each answer, then builds the run record from the configuration and the answers. A release run refuses to start when the checkout has changed or untracked files, or isn't a git checkout, so the commit it records is exactly the code that ran.
+
+**The code version** (`pipelines.provenance`). `code_version` returns the commit and the dirty flag as a `core.provenance.CodeVersion`. The build stages only log it: their committed reports leave it out, since a report written before its own commit would always say dirty.
 
 ## Stages
 
@@ -300,7 +319,7 @@ Each search loads the 2.3 GB model again, which takes most of its 9 seconds on t
 
 ### Generate
 
-Generation turns a question and its chunks into a cited answer. The records and `hangar ask` are still to be written, in #27 and #28.
+Generation turns a question and its chunks into a cited answer. `hangar ask` is still to be written, in #28; the records it writes are described under [Run records](#run-records).
 
 **The prompt.** A prompt file, such as `prompts/answer-v0.md`, has three parts, each starting with a level-1 heading on its own line:
 

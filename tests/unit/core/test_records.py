@@ -1,0 +1,163 @@
+import json
+from datetime import datetime, timedelta
+
+import pytest
+from pydantic import ValidationError
+
+from hangar.core.costs import Cost
+from hangar.core.records import (
+    RunRecord,
+    RunTotals,
+    ScoredChunkRef,
+    StageTimings,
+    run_totals,
+)
+from tests.builders import (
+    STARTED_AT,
+    answer_record,
+    chunk,
+    completion,
+    page,
+    run_record,
+    scored,
+)
+
+
+def test_an_answer_record_holds_every_field_of_the_issue() -> None:
+    written = json.loads(answer_record().model_dump_json())
+
+    assert set(written) == {
+        "run_id",
+        "question_id",
+        "question",
+        "scored_chunks",
+        "prompt_version",
+        "completion",
+        "citations",
+        "timings",
+        "cost",
+    }
+    assert set(written["timings"]) == {"retrieval_seconds", "generation_seconds"}
+
+
+def test_an_answer_record_keeps_no_chunk_text() -> None:
+    # The documents are never redistributed (ADR-0003), and answer records
+    # are committed.
+    record = answer_record(
+        scored_chunks=(ScoredChunkRef.of(scored(chunk("secret words"))),)
+    )
+
+    written = json.loads(record.model_dump_json())
+
+    assert "secret words" not in record.model_dump_json()
+    assert set(written["scored_chunks"][0]) == {
+        "chunk_id",
+        "score",
+        "document_id",
+        "passages",
+    }
+
+
+def test_a_chunk_reference_keeps_the_id_score_document_and_passages() -> None:
+    retrieved = chunk(passages=[page(3), page(4)])
+
+    ref = ScoredChunkRef.of(scored(retrieved, score=0.82))
+
+    assert ref == ScoredChunkRef(
+        chunk_id=retrieved.id,
+        score=0.82,
+        document_id=retrieved.document_id,
+        passages=retrieved.passages,
+    )
+
+
+def test_an_answer_record_reads_back_from_its_json() -> None:
+    record = answer_record(question_id="q-0001")
+
+    assert type(record).model_validate_json(record.model_dump_json()) == record
+
+
+def test_a_run_record_holds_every_field_of_the_issue() -> None:
+    written = json.loads(run_record().model_dump_json())
+
+    assert set(written) == {
+        "run_id",
+        "config_hash",
+        "code",
+        "release",
+        "snapshot",
+        "models",
+        "started_at",
+        "ended_at",
+        "totals",
+    }
+    assert set(written["code"]) == {"commit", "dirty"}
+    assert set(written["models"]) == {
+        "embedding_model",
+        "embedding_revision",
+        "generation_model",
+    }
+    assert set(written["totals"]) == {
+        "answers",
+        "input_tokens",
+        "output_tokens",
+        "cost",
+        "retrieval_seconds",
+        "generation_seconds",
+    }
+
+
+def test_a_run_record_reads_back_from_its_json() -> None:
+    record = run_record()
+
+    assert RunRecord.model_validate_json(record.model_dump_json()) == record
+
+
+def test_a_run_outside_a_git_checkout_has_no_code_version() -> None:
+    assert run_record(code=None).code is None
+
+
+def test_a_run_cannot_end_before_it_starts() -> None:
+    with pytest.raises(ValidationError, match="ends before it starts"):
+        run_record(ended_at=STARTED_AT - timedelta(seconds=1))
+
+
+def test_run_times_must_have_a_time_zone() -> None:
+    with pytest.raises(ValidationError, match="timezone"):
+        run_record(started_at=datetime(2026, 11, 25, 12, 0, 0))  # noqa: DTZ001
+
+
+def test_run_totals_add_tokens_costs_and_stage_timings() -> None:
+    answers = [
+        answer_record(
+            completion=completion(input_tokens=900, output_tokens=100),
+            timings=StageTimings(retrieval_seconds=0.25, generation_seconds=1.5),
+            cost=Cost(free_tier_usd=0.0, list_price_usd=0.0002),
+        ),
+        answer_record(
+            completion=completion(input_tokens=1100, output_tokens=300),
+            timings=StageTimings(retrieval_seconds=0.5, generation_seconds=2.0),
+            cost=Cost(free_tier_usd=0.0, list_price_usd=0.0004),
+        ),
+    ]
+
+    totals = run_totals(answers)
+
+    assert totals.answers == 2
+    assert totals.input_tokens == 2000
+    assert totals.output_tokens == 400
+    assert totals.cost.free_tier_usd == 0.0
+    assert totals.cost.list_price_usd == pytest.approx(0.0006)
+    assert totals.retrieval_seconds == pytest.approx(0.75)
+    assert totals.generation_seconds == pytest.approx(3.5)
+
+
+def test_a_run_without_answers_totals_zero() -> None:
+    assert run_totals([]) == RunTotals(
+        answers=0,
+        input_tokens=0,
+        output_tokens=0,
+        cost=Cost(free_tier_usd=0.0, list_price_usd=0.0),
+        retrieval_seconds=0.0,
+        generation_seconds=0.0,
+    )

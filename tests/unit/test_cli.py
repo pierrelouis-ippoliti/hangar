@@ -1,5 +1,6 @@
 import hashlib
 import json
+import re
 import socket
 from importlib.metadata import version
 from pathlib import Path
@@ -9,7 +10,9 @@ import pytest
 import yaml
 
 from hangar.cli import main
+from hangar.core.config import config_hash
 from hangar.corpus.download import LocalCopyDownloader
+from hangar.pipelines.config import load_pipeline_config
 
 ROOT = Path(__file__).resolve().parents[2]
 V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
@@ -40,7 +43,7 @@ def workspace(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
 
 def run_logs(workspace: Path) -> list[Path]:
-    # A run log is named after its run ID, such as 20261105T114319Z-7e7595.
+    # A run log is named after its run ID, such as 20261105T114319Z-1a2b3c4d.
     return list((workspace / "data" / "logs").glob("*T*Z-*.jsonl"))
 
 
@@ -98,16 +101,30 @@ def test_config_defaults_to_the_v0_pipeline(workspace: Path) -> None:
     )
 
 
-def test_invalid_config_is_reported_with_its_file(workspace: Path) -> None:
+def test_the_run_id_and_log_file_carry_the_start_time_and_config_hash(
+    workspace: Path,
+) -> None:
+    short_hash = config_hash(load_pipeline_config(V0_CONFIG))[:8]
+
+    main(["seed", "run", "--config", str(V0_CONFIG)])
+
+    (log_file,) = run_logs(workspace)
+    assert re.fullmatch(rf"\d{{8}}T\d{{6}}Z-{short_hash}", log_file.stem)
+    assert {r["run_id"] for r in log_records(workspace)} == {log_file.stem}
+
+
+def test_invalid_config_is_reported_before_logging_starts(
+    workspace: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # The run ID holds the config hash, so no run starts without a valid
+    # config.
     config = workspace / "broken.yaml"
     config.write_text("corpus: {}\n")
 
     assert main(["doctor", "--config", str(config)]) == 1
 
-    assert any(
-        r["level"] == "ERROR" and r["message"].startswith(str(config))
-        for r in log_records(workspace)
-    )
+    assert capsys.readouterr().err.startswith(f"hangar: {config}")
+    assert run_logs(workspace) == []
 
 
 def test_invalid_settings_are_reported_before_logging_starts(
@@ -133,6 +150,20 @@ def test_doctor_passes_when_every_check_passes(
     messages = [r["message"] for r in log_records(workspace)]
     for check in ("Python", "Qdrant", "API key", "Disk space", "Model cache"):
         assert any(m.startswith(f"pass  {check}:") for m in messages), check
+
+
+def test_a_command_that_succeeds_logs_its_duration(
+    fake_qdrant: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    workspace: Path,
+) -> None:
+    monkeypatch.setenv("HANGAR_QDRANT_URL", fake_qdrant.url)
+    monkeypatch.setenv("MISTRAL_API_KEY", FAKE_KEY)
+
+    main(["doctor", "--config", str(V0_CONFIG)])
+
+    last = log_records(workspace)[-1]
+    assert re.fullmatch(r"hangar doctor finished in \d+\.\d s", last["message"])
 
 
 def test_doctor_reports_every_check_and_fails_when_one_fails(

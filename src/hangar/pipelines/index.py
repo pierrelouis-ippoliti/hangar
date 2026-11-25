@@ -12,7 +12,7 @@ from hangar.indexing.index import VectorIndex, VectorIndexError
 from hangar.indexing.manifest import IndexManifest
 from hangar.indexing.naming import collection_name
 from hangar.pipelines.chunk_file import read_chunks
-from hangar.pipelines.provenance import code_version
+from hangar.pipelines.provenance import describe_code_version
 from hangar.pipelines.registry import build_index
 from hangar.pipelines.settings import Settings
 from hangar.pipelines.vector_file import read_vectors
@@ -63,7 +63,7 @@ def run_index(
 
     _require(name, chunks_path, "hangar chunk")
     _require(name, vectors_dir / "vectors.parquet", "hangar embed")
-    logger.info("code at %s", code_version(Path.cwd()))
+    logger.info("code at %s", describe_code_version(Path.cwd()))
 
     chunks = read_chunks(chunks_path)
     meta = VectorsMeta.model_validate_json(

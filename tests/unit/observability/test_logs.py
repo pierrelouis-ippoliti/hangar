@@ -2,6 +2,7 @@ import io
 import json
 import logging
 import re
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any
 
@@ -100,11 +101,19 @@ def test_configuring_again_replaces_the_previous_handlers(tmp_path: Path) -> Non
     assert len(read_json_lines(second_file)) == 1
 
 
-def test_run_ids_hold_the_start_time_and_differ_between_runs() -> None:
-    first, second = new_run_id(), new_run_id()
+CONFIG_HASH = "1a2b3c4d" + "0" * 56
 
-    assert re.fullmatch(r"\d{8}T\d{6}Z-[0-9a-f]{6}", first)
-    assert first != second
+
+def test_a_run_id_is_the_start_time_in_utc_and_a_short_config_hash() -> None:
+    started_at = datetime(2026, 11, 5, 14, 22, 33, tzinfo=UTC)
+
+    assert new_run_id(CONFIG_HASH, started_at) == "20261105T142233Z-1a2b3c4d"
+
+
+def test_a_run_id_converts_the_start_time_to_utc() -> None:
+    started_at = datetime(2026, 11, 5, 15, 22, 33, tzinfo=timezone(timedelta(hours=1)))
+
+    assert new_run_id(CONFIG_HASH, started_at) == "20261105T142233Z-1a2b3c4d"
 
 
 FAKE_KEY = "fake-mistral-key-0123456789"
