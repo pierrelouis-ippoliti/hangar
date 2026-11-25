@@ -34,9 +34,9 @@ One package, `src/hangar/`, split by stage. Dependency rules, enforced by import
 
 - `core` (domain types, config models, identifiers, provenance, errors) imports nothing else from hangar and does no I/O.
 - Stage packages (`corpus`, `parsing`, `chunking`, `embedding`, `indexing`, `retrieval`, `generation`, `evaluation`) import `core` only. The one exception: `retrieval` may import the embedding and indexing interfaces.
-- Adapters (Qdrant, Mistral, sentence-transformers, pypdfium2) live inside their stage package. Only `pipelines` constructs them, through a registry keyed by type names in the config.
+- Adapters (Qdrant, Mistral, sentence-transformers, pypdfium2) live inside their stage package. Only `pipelines` constructs them, in `pipelines/registry.py`, one `build_*` function per stage. Each config `type` field accepts only the value v0 implements, so the registry doesn't branch on it yet; a later version adds a value and its branch together.
 - `pipelines` imports stages and `core`; `cli` imports `pipelines` only. `observability` imports `core` only and may be used everywhere.
-- `files` (reading YAML files) imports `core` only, so stages and `pipelines` can read files while `core` stays free of I/O.
+- `files` (reading YAML files) and `pacing` (request spacing and retries for remote services) import `core` only, so stages and `pipelines` can share them while `core` stays free of I/O.
 
 Rules that cut across files:
 
@@ -49,6 +49,7 @@ Rules that cut across files:
 - Config has two layers. Environment settings (pydantic-settings, `.env`) say *where* things run and are not hashed. The pipeline YAML says *what* runs and is hashed.
 - Pin everything: model revisions by commit hash, the LLM by dated model ID, the Qdrant image by tag.
 - Prompts in `prompts/` are never edited in place. A new version gets a new file.
+- No `while True:`. A loop states its stop condition in its header. `make check` and a pre-commit hook refuse it.
 
 ## v0 constraints
 
@@ -70,9 +71,9 @@ Rules that cut across files:
 
 ## Versions, tags and releases
 
-The tag is always `v` followed by the version in `pyproject.toml`. Bump the version and tag `main` after the last pull request of a milestone is merged.
+The tag is always `v` followed by the version in `pyproject.toml`. Between tags the version carries `.dev0`: the first pull request of milestone M*k* sets `0.0.0ak.dev0` and runs `uv lock`. After the milestone's last issue is merged, a release pull request (branch `v0/m<k>-release-<version>`, no issue) removes `.dev0`, runs `uv lock` and dates the CHANGELOG subsection; `main` is tagged once it is merged.
 
 - Milestone M*k* of Hangar version *N* is the pre-release `N.0.0ak`: M0 of v0 is `0.0.0a0` (tag `v0.0.0a0`), M5 is `0.0.0a5`.
 - The final milestone of a version is the release `N.0.0`: v0 is `0.0.0` (tag `v0.0.0`), v1 is `1.0.0`.
 - Milestone tags get no GitHub release. Each version gets one GitHub release, titled like "Hangar v0 · Baseline", carrying its CHANGELOG notes and results files.
-- `CHANGELOG.md` gets one section per tag.
+- `CHANGELOG.md` gets one section per tag. Every feature pull request adds its own line, ending with `(#<issue>)`, under `### Unreleased · M<k> <name>`.
