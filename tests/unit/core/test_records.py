@@ -84,6 +84,7 @@ def test_a_run_record_holds_every_field_of_the_issue() -> None:
         "run_id",
         "config_hash",
         "code",
+        "release",
         "snapshot",
         "models",
         "started_at",

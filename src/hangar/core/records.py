@@ -171,6 +171,8 @@ class RunRecord(RecordModel):
         config_hash: The hash of the pipeline configuration.
         code: The git commit and dirty flag, or None when the run was not
             started from a git checkout.
+        release: Whether it was a release run, which only starts from a
+            clean commit.
         snapshot: The corpus snapshot, such as ``c1``.
         models: The embedding and language models, pinned.
         started_at: When the run started.
@@ -181,6 +183,7 @@ class RunRecord(RecordModel):
     run_id: str = Field(min_length=1)
     config_hash: Sha256
     code: CodeVersion | None
+    release: bool
     snapshot: str = Field(min_length=1)
     models: ModelVersions
     started_at: AwareDatetime

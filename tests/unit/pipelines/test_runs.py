@@ -53,12 +53,14 @@ def test_a_release_run_on_a_clean_tree_records_its_commit(tmp_path: Path) -> Non
     record = start(tmp_path, CLEAN, release=True).finish()
 
     assert record.code == CLEAN
+    assert record.release
 
 
 def test_a_run_that_is_not_a_release_may_have_changes(tmp_path: Path) -> None:
     record = start(tmp_path, DIRTY).finish()
 
     assert record.code == DIRTY
+    assert not record.release
 
 
 def test_each_answer_is_recorded_as_it_comes(tmp_path: Path) -> None:

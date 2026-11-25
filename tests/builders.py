@@ -238,6 +238,7 @@ def run_record(**changes: Any) -> RunRecord:
         "run_id": RUN_ID,
         "config_hash": "1a2b3c4d" + "0" * 56,
         "code": CodeVersion(commit="0123456789" * 4, dirty=False),
+        "release": False,
         "snapshot": "c1",
         "models": ModelVersions(
             embedding_model="BAAI/bge-m3",

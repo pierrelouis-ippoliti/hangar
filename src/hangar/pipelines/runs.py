@@ -64,6 +64,7 @@ class AnsweringRun:
         self._config = config
         self._recorder = recorder
         self._code = code
+        self._release = release
         self._clock = clock
         self._started_at = clock()
         self._answers: list[AnswerRecord] = []
@@ -90,6 +91,7 @@ class AnsweringRun:
             run_id=self._run_id,
             config_hash=config_hash(config),
             code=self._code,
+            release=self._release,
             snapshot=config.corpus.snapshot,
             models=ModelVersions(
                 embedding_model=config.embedding.model,
