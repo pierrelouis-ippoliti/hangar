@@ -300,7 +300,7 @@ Each search loads the 2.3 GB model again, which takes most of its 9 seconds on t
 
 ### Generate
 
-Generation turns a question and its chunks into a cited answer. The citation parser, the records and `hangar ask` are still to be written, in #26 to #28.
+Generation turns a question and its chunks into a cited answer. The records and `hangar ask` are still to be written, in #27 and #28.
 
 **The prompt.** A prompt file, such as `prompts/answer-v0.md`, has three parts, each starting with a level-1 heading on its own line:
 
@@ -331,6 +331,14 @@ Each source is labelled with its authority and type, such as "FAA handbook guida
 - **`FakeLlmClient`**, for tests: it returns the same answer to every prompt, citing sources [1] and [2] by default, and counts words as tokens.
 
 A live test (`uv run pytest -m llm tests/llm`, local only) sends the v0 prompt to Mistral once and checks the reply's shape and token counts.
+
+**The citation parser** (`generation.citations`). `parse_citations(answer, sources)` takes the answer text and the source map of its prompt, and returns one `core.citations.Citation` per distinct marker number, in the order each number first appears:
+
+- A number in the source map gives a valid citation, with the chunk ID, the document ID and the passages of that source, so the answer can show its document and pages or sections without another lookup.
+- Any other number, such as `[7]` with five sources or `[0]`, gives an invalid citation, with no chunk, document or passages. The answer record keeps it, so wrong markers can be counted.
+- An answer with no marker gives no citation.
+
+Only a number in square brackets counts as a marker, as the v0 prompt asks: `[1][3]` gives two citations, while `[1, 3]` or `[OFF]` give none. Checking that a cited source supports its claim is left to v7.
 
 ### Evaluate
 
