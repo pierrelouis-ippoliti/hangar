@@ -8,6 +8,7 @@ package.
 
 import logging
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -38,10 +39,11 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
 
     Reads the settings and the pipeline file, starts a run with its own ID
     and log file (``<data folder>/logs/<run ID>.jsonl``), then runs the
-    command. The run ID holds the config hash, so an unusable settings or
-    pipeline file is reported on the screen before the run starts. Errors
-    after that are logged rather than raised, so they go through the same
-    redaction as every other record.
+    command, logging its duration when it succeeds. The run ID holds the
+    config hash, so an unusable settings or pipeline file is reported on
+    the screen before the run starts. Errors after that are logged rather
+    than raised, so they go through the same redaction as every other
+    record.
 
     Args:
         command: The subcommand, such as ``doctor`` or ``seed run``.
@@ -76,8 +78,15 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
         try:
             logger.info("run ID %s, logging to %s", run_id, log_file)
             logger.info("read %s, config hash %s", config_path, config_digest)
+            started = time.monotonic()
+            exit_code = _run(command, settings, config, question)
 
-            return _run(command, settings, config, question)
+            if exit_code == 0:
+                logger.info(
+                    "hangar %s finished in %.1f s", command, time.monotonic() - started
+                )
+
+            return exit_code
         except HangarError as error:
             logger.error("%s", error)
             return 1

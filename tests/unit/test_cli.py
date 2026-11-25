@@ -152,6 +152,20 @@ def test_doctor_passes_when_every_check_passes(
         assert any(m.startswith(f"pass  {check}:") for m in messages), check
 
 
+def test_a_command_that_succeeds_logs_its_duration(
+    fake_qdrant: Any,
+    monkeypatch: pytest.MonkeyPatch,
+    workspace: Path,
+) -> None:
+    monkeypatch.setenv("HANGAR_QDRANT_URL", fake_qdrant.url)
+    monkeypatch.setenv("MISTRAL_API_KEY", FAKE_KEY)
+
+    main(["doctor", "--config", str(V0_CONFIG)])
+
+    last = log_records(workspace)[-1]
+    assert re.fullmatch(r"hangar doctor finished in \d+\.\d s", last["message"])
+
+
 def test_doctor_reports_every_check_and_fails_when_one_fails(
     monkeypatch: pytest.MonkeyPatch,
     workspace: Path,
