@@ -32,7 +32,7 @@ def start(
     return AnsweringRun(
         RUN_ID,
         CONFIG,
-        FileRunRecorder(folder, "answers.jsonl"),
+        FileRunRecorder(folder / "run", "answers.jsonl"),
         code,
         release=release,
         clock=clock(0, 90),
@@ -66,7 +66,7 @@ def test_each_answer_is_recorded_as_it_comes(tmp_path: Path) -> None:
 
     run.record_answer(answer_record(question_id="q-0001"))
 
-    (line,) = (tmp_path / "answers.jsonl").read_text().splitlines()
+    (line,) = (tmp_path / "run" / "answers.jsonl").read_text().splitlines()
     assert AnswerRecord.model_validate_json(line).question_id == "q-0001"
 
 
@@ -88,4 +88,4 @@ def test_finishing_writes_the_run_record_with_its_totals(tmp_path: Path) -> None
     assert record.started_at == STARTED_AT
     assert record.ended_at == STARTED_AT + timedelta(seconds=90)
     assert record.totals == run_totals(answers)
-    assert json.loads((tmp_path / "run.json").read_text())["run_id"] == RUN_ID
+    assert json.loads((tmp_path / "run" / "run.json").read_text())["run_id"] == RUN_ID

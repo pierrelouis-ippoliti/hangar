@@ -9,9 +9,14 @@ a recorder that sends them to Weights & Biases.
 from pathlib import Path
 from typing import Protocol
 
+from hangar.core.errors import HangarError
 from hangar.core.records import AnswerRecord, RunRecord
 
 RUN_FILE = "run.json"
+
+
+class RunFolderExistsError(HangarError):
+    """A run folder that already exists, which a new run must not write into."""
 
 
 class RunRecorder(Protocol):
@@ -42,26 +47,36 @@ class FileRunRecorder:
     """
     Writes a run's answer records to a JSON lines file, and its run record.
 
-    Both files sit in one folder, such as ``results/v0``, the run record in
+    Both files sit in a new folder of their own, the run record in
     ``run.json``. Each answer is appended as soon as it is recorded, so a
     run that stops halfway keeps the answers it already has.
     """
 
     def __init__(self, folder: Path, answers_file: str) -> None:
         """
-        Set up the recorder, and empty the answers file of an earlier run.
+        Set up the recorder, creating the run's folder.
 
         Args:
-            folder: The folder of both files. It is created if needed.
+            folder: The folder of both files, which must not exist yet. Its
+                parent folders are created if needed.
             answers_file: The name of the answers file, such as
                 ``seed-run.jsonl``.
+
+        Raises:
+            RunFolderExistsError: If the folder already exists, so that a
+                run never overwrites the records of another.
         """
-        folder.mkdir(parents=True, exist_ok=True)
+        try:
+            folder.mkdir(parents=True)
+        except FileExistsError as error:
+            raise RunFolderExistsError(
+                f"{folder} already exists; a run writes only into a new folder, "
+                "so the records of another run are never overwritten"
+            ) from error
+
         self.answers_path = folder / answers_file
         self.run_path = folder / RUN_FILE
-
-        # The files hold one run, so the answers of an earlier run go.
-        self.answers_path.write_text("", encoding="utf-8")
+        self.answers_path.touch()
 
     def record_answer(self, answer: AnswerRecord) -> None:
         """
