@@ -5,10 +5,10 @@ import pypdfium2 as pdfium
 import pytest
 
 from hangar.core.config import NormalisationConfig
-from hangar.core.corpus import DocumentSpec
 from hangar.core.parsed import PageLocation, Passage, passage_id
 from hangar.parsing.parser import ParseError
 from hangar.parsing.pdf import PdfPageParser, page_warnings
+from tests.builders import document_spec
 
 FIXTURE = (
     Path(__file__).resolve().parents[2]
@@ -19,30 +19,8 @@ FIXTURE = (
 NORMALISATION = NormalisationConfig(unicode_form="NFKC", collapse_whitespace=True)
 
 
-def spec(document_id: str = "faa-h-8083-30b") -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Aviation Maintenance Technician Handbook – General",
-            "authority": "FAA",
-            "type": "handbook",
-            "language": "en",
-            "source_url": "https://example.org/handbook.pdf",
-            "official_url": "https://example.org/handbook.pdf",
-            "format": "pdf",
-            "edition": "B",
-            "content_date": "2023-01-01",
-            "page_modified_date": "2024-01-01",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": "0123456789abcdef" * 4,
-            "reuse_note": "Made up for tests.",
-        }
-    )
-
-
 def test_each_page_becomes_one_passage_with_its_printed_label() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
 
     assert [p.id for p in parsed.passages] == [
         "faa-h-8083-30b#p1",
@@ -57,7 +35,7 @@ def test_each_page_becomes_one_passage_with_its_printed_label() -> None:
 
 
 def test_passages_cover_the_canonical_text_in_page_order() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
     pages = [parsed.text[p.start : p.end] for p in parsed.passages]
 
     assert "".join(pages) == parsed.text
@@ -67,21 +45,21 @@ def test_passages_cover_the_canonical_text_in_page_order() -> None:
 
 
 def test_text_is_normalised() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
 
     assert "\r" not in parsed.text
     assert "  " not in parsed.text
 
 
 def test_hyphens_that_pdfium_marks_as_u_fffe_are_kept_as_hyphens() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
 
     assert "\ufffe" not in parsed.text
     assert "self-sustaining" in parsed.text
 
 
 def test_parser_records_its_library_and_the_hash_of_the_file_it_read() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
 
     assert parsed.document_id == "faa-h-8083-30b"
     assert parsed.source_sha256 == hashlib.sha256(FIXTURE.read_bytes()).hexdigest()
@@ -90,7 +68,7 @@ def test_parser_records_its_library_and_the_hash_of_the_file_it_read() -> None:
 
 
 def test_the_fixture_has_no_warnings() -> None:
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), FIXTURE)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), FIXTURE)
 
     assert parsed.warnings == ()
 
@@ -108,7 +86,7 @@ def test_blank_page_keeps_an_empty_passage_and_a_warning(tmp_path: Path) -> None
     pdf.close()
     source.close()
 
-    parsed = PdfPageParser(NORMALISATION).parse(spec(), path)
+    parsed = PdfPageParser(NORMALISATION).parse(document_spec(), path)
     blank = parsed.passages[1]
 
     assert blank.start == blank.end
@@ -146,7 +124,7 @@ def test_a_file_that_is_not_a_pdf_raises_an_error_naming_the_document(
     path.write_bytes(b"not a PDF")
 
     with pytest.raises(ParseError, match="faa-h-8083-30b"):
-        PdfPageParser(NORMALISATION).parse(spec(), path)
+        PdfPageParser(NORMALISATION).parse(document_spec(), path)
 
 
 def test_one_unreadable_character_is_named_in_the_singular() -> None:

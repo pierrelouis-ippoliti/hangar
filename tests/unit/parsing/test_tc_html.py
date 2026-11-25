@@ -5,10 +5,10 @@ import pytest
 from lxml import etree
 
 from hangar.core.config import ContentSelectors, NormalisationConfig
-from hangar.core.corpus import DocumentSpec
 from hangar.core.parsed import ParsedDocument
 from hangar.parsing.parser import ParseError
 from hangar.parsing.tc_html import TcHtmlParser
+from tests.builders import document_spec
 
 FIXTURES = Path(__file__).resolve().parents[2] / "fixtures" / "tc_html"
 STANDARD = FIXTURES / "tc-standard-example.html"
@@ -18,34 +18,14 @@ SELECTORS = ContentSelectors(standard="//main", advisory_circular="//main")
 TITLE = "Advisory Circular (AC) No. 571-999"
 
 
-def spec(document_id: str, document_type: str = "standard") -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Example",
-            "authority": "TC",
-            "type": document_type,
-            "language": "en",
-            "source_url": "https://example.org/page",
-            "official_url": "https://example.org/page",
-            "format": "html",
-            "edition": "Issue 01",
-            "content_date": "2024-01-01",
-            "page_modified_date": "2024-01-01",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": "0123456789abcdef" * 4,
-            "reuse_note": "Made up for tests.",
-        }
-    )
-
-
 def parse(
     path: Path,
     document_type: str = "standard",
     selectors: ContentSelectors = SELECTORS,
 ) -> ParsedDocument:
-    document = spec("tc-example", document_type)
+    document = document_spec(
+        id="tc-example", authority="TC", type=document_type, format="html"
+    )
 
     return TcHtmlParser(NORMALISATION, selectors).parse(document, path)
 

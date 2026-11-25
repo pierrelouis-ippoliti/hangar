@@ -7,31 +7,10 @@ import pytest
 from hangar.core.corpus import DocumentSpec, RawArtifact
 from hangar.corpus.download import LocalCopyDownloader
 from hangar.corpus.fetch import FetchError, fetch_documents
+from tests.builders import document_spec
 
 FETCHED_AT = datetime.datetime(2026, 11, 5, 9, 30, tzinfo=datetime.UTC)
 WRONG_SHA256 = "f" * 64
-
-
-def spec(document_id: str, document_format: str, content: bytes) -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Example",
-            "authority": "FAA",
-            "type": "handbook",
-            "language": "en",
-            "source_url": f"https://example.org/{document_id}",
-            "official_url": f"https://example.org/{document_id}",
-            "format": document_format,
-            "edition": "B",
-            "content_date": "2023-01-01",
-            "page_modified_date": "2023-01-01",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": hashlib.sha256(content).hexdigest(),
-            "reuse_note": "Made up for tests.",
-        }
-    )
 
 
 @pytest.fixture
@@ -49,7 +28,12 @@ def corpus(tmp_path: Path) -> tuple[list[DocumentSpec], LocalCopyDownloader]:
     for (document_id, document_format), content in contents.items():
         source = sources / document_id
         source.write_bytes(content)
-        document = spec(document_id, document_format, content)
+        document = document_spec(
+            id=document_id,
+            format=document_format,
+            source_url=f"https://example.org/{document_id}",
+            sha256=hashlib.sha256(content).hexdigest(),
+        )
         documents.append(document)
         files[str(document.source_url)] = source
 

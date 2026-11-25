@@ -44,7 +44,8 @@ build-backend = "uv_build"
 target-version = "py312"
 
 [tool.ruff.lint]
-select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "D"]
+# DTZ flags datetimes without a time zone.
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "N", "D", "DTZ"]
 # Docstrings put their summary on the line after the opening quotes,
 # so D213 replaces D212 (summary on the first line). That holds for short
 # docstrings too, so D200 (one-line docstrings on one line) is off, and a
@@ -99,6 +100,25 @@ layers = [
     "(hangar.corpus) | (hangar.parsing) | (hangar.chunking) | (hangar.embedding) | (hangar.indexing) | (hangar.generation) | (hangar.evaluation)",
     "(hangar.observability) | (hangar.files) | (hangar.pacing)",
     "(hangar.core)",
+]
+
+# core holds domain types and does no I/O, so stages can rely on it without
+# side effects. pathlib stays allowed: core uses Path only as a type.
+[[tool.importlinter.contracts]]
+name = "core does no I/O"
+type = "forbidden"
+source_modules = ["hangar.core"]
+forbidden_modules = [
+    "os",
+    "io",
+    "shutil",
+    "tempfile",
+    "glob",
+    "socket",
+    "subprocess",
+    "urllib",
+    "http",
+    "sqlite3",
 ]
 
 # The layers above would let cli reach every package; it may use only

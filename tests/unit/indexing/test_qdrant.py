@@ -4,32 +4,11 @@ import socket
 import pytest
 from qdrant_client import QdrantClient
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
-from hangar.core.parsed import PageLocation
 from hangar.indexing.index import VectorIndexError
 from hangar.indexing.qdrant import QdrantIndex
+from tests.builders import chunk, page
 
 COLLECTION = "c1__fixed512__test"
-
-
-def chunk(document_id: str, start: int, text: str) -> Chunk:
-    end = start + len(text)
-
-    return Chunk(
-        id=chunk_id(document_id, "fixed512", start, end),
-        document_id=document_id,
-        chunker_id="fixed512",
-        start=start,
-        end=end,
-        text=text,
-        token_count=len(text.split()),
-        passages=[
-            PassageRef(
-                id=f"{document_id}#p1",
-                location=PageLocation(page_index=1, page_label="7-12"),
-            )
-        ],
-    )
 
 
 def unit(*values: float) -> list[float]:
@@ -39,9 +18,9 @@ def unit(*values: float) -> list[float]:
 
 
 CHUNKS = [
-    chunk("example-handbook", 0, "torque the bolt "),
-    chunk("example-handbook", 16, "safety wire "),
-    chunk("example-ac", 0, "maintenance release"),
+    chunk("torque the bolt ", passages=[page(1, "7-12")]),
+    chunk("safety wire ", start=16, passages=[page(1, "7-12")]),
+    chunk("maintenance release", passages=[page(1, "7-12", document_id="example-ac")]),
 ]
 VECTORS = [unit(1, 0, 0), unit(1, 1, 0), unit(0, 0, 1)]
 

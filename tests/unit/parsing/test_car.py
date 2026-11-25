@@ -5,41 +5,23 @@ import pytest
 from lxml import etree
 
 from hangar.core.config import NormalisationConfig
-from hangar.core.corpus import DocumentSpec
 from hangar.core.parsed import ParsedDocument, SectionLocation
 from hangar.parsing.car import CarXmlParser
 from hangar.parsing.parser import ParseError
+from tests.builders import document_spec
 
 FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "car" / "car-example.xml"
 NORMALISATION = NormalisationConfig(unicode_form="NFKC", collapse_whitespace=True)
 
 
-def spec(document_id: str = "car-example") -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Example Aviation Regulations",
-            "authority": "TC",
-            "type": "regulation",
-            "language": "en",
-            "source_url": "https://example.org/regulations.xml",
-            "official_url": "https://example.org/regulations.html",
-            "format": "xml",
-            "edition": "2026-06-18",
-            "content_date": "2026-06-18",
-            "page_modified_date": "2026-06-18",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": "0123456789abcdef" * 4,
-            "reuse_note": "Made up for tests.",
-        }
-    )
-
-
 def parse(
     subparts: tuple[str, ...] = ("571", "573"), path: Path = FIXTURE
 ) -> ParsedDocument:
-    return CarXmlParser(NORMALISATION, subparts).parse(spec(), path)
+    document = document_spec(
+        id="car-example", authority="TC", type="regulation", format="xml"
+    )
+
+    return CarXmlParser(NORMALISATION, subparts).parse(document, path)
 
 
 def section_texts(parsed: ParsedDocument) -> dict[str, str]:

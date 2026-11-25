@@ -8,7 +8,11 @@ setup:
 	uv run --locked pre-commit install
 
 # Lint, format check, types, import rules and tests. CI runs this target.
+# A loop states its stop condition in its header, so while True is refused.
 check:
+	@if grep -rnE --include='*.py' '^[[:space:]]*while[[:space:]]+True[[:space:]]*:' src tests; then \
+		echo "Write the loop's stop condition in its header, not while True." >&2; exit 1; \
+	fi
 	uv run --locked ruff check
 	uv run --locked ruff format --check
 	uv run --locked mypy

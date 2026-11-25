@@ -3,32 +3,11 @@ import datetime
 import pydantic
 import pytest
 
-from hangar.core.corpus import DocumentSpec, RawArtifact, raw_artifact_id
+from hangar.core.corpus import RawArtifact, raw_artifact_id
+from tests.builders import document_spec
 
 FAKE_SHA256 = "0123456789abcdef" * 4
 FETCHED_AT = datetime.datetime(2026, 11, 5, 9, 30, tzinfo=datetime.UTC)
-
-
-def spec(document_id: str, document_format: str) -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Example",
-            "authority": "TC",
-            "type": "advisory_circular",
-            "language": "en",
-            "source_url": "https://example.org/page",
-            "official_url": "https://example.org/page",
-            "format": document_format,
-            "edition": "Issue 01",
-            "content_date": "2024-01-01",
-            "page_modified_date": "2024-01-01",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": FAKE_SHA256,
-            "reuse_note": "Made up for tests.",
-        }
-    )
 
 
 def artifact(**changes: object) -> RawArtifact:
@@ -57,7 +36,10 @@ def artifact(**changes: object) -> RawArtifact:
 def test_raw_artifact_id_is_the_document_id_plus_its_extension(
     document_id: str, document_format: str, expected: str
 ) -> None:
-    assert raw_artifact_id(spec(document_id, document_format)) == expected
+    assert (
+        raw_artifact_id(document_spec(id=document_id, format=document_format))
+        == expected
+    )
 
 
 def test_raw_artifact_survives_a_json_round_trip() -> None:
@@ -77,7 +59,8 @@ def test_raw_artifact_validators_may_be_missing() -> None:
     [
         {"sha256": "not-a-hash"},
         {"size_bytes": -1},
-        {"fetched_at": datetime.datetime(2026, 11, 5, 9, 30)},
+        # A naive time on purpose: the model must refuse it.
+        {"fetched_at": datetime.datetime(2026, 11, 5, 9, 30)},  # noqa: DTZ001
     ],
     ids=["bad hash", "negative size", "time without a time zone"],
 )

@@ -3,14 +3,11 @@ from typing import Any
 import pydantic
 import pytest
 
-from hangar.core.chunks import PassageRef, chunk_id
+from hangar.core.chunks import chunk_id
 from hangar.core.citations import Citation
-from hangar.core.parsed import PageLocation
+from tests.builders import page
 
-PASSAGE = PassageRef(
-    id="faa-h-8083-30b#p323",
-    location=PageLocation(page_index=323, page_label="7-79"),
-)
+PASSAGE = page(323, "7-79", document_id="faa-h-8083-30b")
 
 
 def valid_citation(**changes: Any) -> Citation:

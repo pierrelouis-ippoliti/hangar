@@ -5,39 +5,19 @@ from pathlib import Path
 import pytest
 
 from hangar.chunking.chunker import ChunkError
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
+from hangar.core.chunks import Chunk
 from hangar.core.config import PipelineConfig, config_hash
-from hangar.core.parsed import PageLocation
 from hangar.core.vectors import VectorsMeta
 from hangar.embedding.embedder import EmbedError, HashEmbedder
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.embed import run_embed
 from hangar.pipelines.settings import Settings, load_settings
 from hangar.pipelines.vector_file import read_vectors
+from tests.builders import chunk, consecutive_chunks
 
 ROOT = Path(__file__).resolve().parents[3]
 V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
 TEXTS = ["one two three ", "four five", "six seven"]
-
-
-def chunk(start: int, text: str) -> Chunk:
-    end = start + len(text)
-
-    return Chunk(
-        id=chunk_id("example-handbook", "fixed512", start, end),
-        document_id="example-handbook",
-        chunker_id="fixed512",
-        start=start,
-        end=end,
-        text=text,
-        token_count=len(text.split()),
-        passages=[
-            PassageRef(
-                id="example-handbook#p1",
-                location=PageLocation(page_index=1, page_label=None),
-            )
-        ],
-    )
 
 
 def chunks_folder(tmp_path: Path) -> Path:
@@ -53,8 +33,7 @@ def setup(
 ) -> tuple[Settings, PipelineConfig]:
     """Write a chunks file, and point the settings at it."""
     if chunks is None:
-        starts = [0, 14, 23]
-        chunks = [chunk(start, text) for start, text in zip(starts, TEXTS, strict=True)]
+        chunks = consecutive_chunks(TEXTS)
 
     folder = chunks_folder(tmp_path)
     folder.mkdir(parents=True)
@@ -147,7 +126,7 @@ def test_a_missing_chunks_file_stops_the_run(
 def test_a_chunk_listed_twice_stops_the_run(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    twice = chunk(0, "one two three ")
+    twice = chunk("one two three ")
     settings, config = setup(tmp_path, monkeypatch, chunks=[twice, twice])
 
     with pytest.raises(ChunkError, match=f"^{twice.id}: .*more than once"):

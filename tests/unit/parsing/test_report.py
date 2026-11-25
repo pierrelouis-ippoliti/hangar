@@ -18,6 +18,7 @@ from hangar.parsing.report import (
     check_report,
     document_report,
 )
+from tests.builders import document_spec
 
 NORMALISATION = NormalisationConfig(unicode_form="NFKC", collapse_whitespace=True)
 FAKE_SHA256 = "0123456789abcdef" * 4
@@ -27,28 +28,6 @@ CHECKS = ParseChecksConfig(
     max_empty_page_share=0.25,
     max_garbled_page_share=0.25,
 )
-
-
-def spec(document_id: str, document_format: str) -> DocumentSpec:
-    return DocumentSpec.model_validate(
-        {
-            "id": document_id,
-            "title": "Example",
-            "authority": "TC",
-            "type": "advisory_circular",
-            "language": "en",
-            "source_url": "https://example.org/page",
-            "official_url": "https://example.org/page",
-            "format": document_format,
-            "edition": "Issue 01",
-            "content_date": "2024-01-01",
-            "page_modified_date": "2024-01-01",
-            "retrieved_on": "2026-11-04",
-            "status": "active",
-            "sha256": FAKE_SHA256,
-            "reuse_note": "Made up for tests.",
-        }
-    )
 
 
 def parsed(
@@ -92,7 +71,7 @@ def sections(document_id: str, labels: list[str | None]) -> ParsedDocument:
 
 def test_pdf_report_counts_pages_empty_pages_and_garbled_pages() -> None:
     report = document_report(
-        spec("handbook", "pdf"),
+        document_spec(id="handbook", format="pdf"),
         pdf("handbook", ["first page", "", "third page", "fourth"], garbled=(3,)),
     )
 
@@ -106,7 +85,9 @@ def test_pdf_report_counts_pages_empty_pages_and_garbled_pages() -> None:
 
 
 def test_section_report_counts_numbered_sections_but_not_the_front_matter() -> None:
-    report = document_report(spec("ac", "html"), sections("ac", [None, "1.0", "1.1"]))
+    report = document_report(
+        document_spec(id="ac", format="html"), sections("ac", [None, "1.0", "1.1"])
+    )
 
     assert report.sections == 2
     assert report.passages == 3
@@ -118,7 +99,9 @@ def test_section_report_counts_numbered_sections_but_not_the_front_matter() -> N
 
 
 def test_report_records_the_parser_and_the_source_hash() -> None:
-    report = document_report(spec("ac", "html"), sections("ac", ["1.0"]))
+    report = document_report(
+        document_spec(id="ac", format="html"), sections("ac", ["1.0"])
+    )
 
     assert report.parser == ParserInfo(name="example", version="1.0")
     assert report.source_sha256 == FAKE_SHA256
@@ -134,15 +117,18 @@ def report_of(*documents: tuple[DocumentSpec, ParsedDocument]) -> ParseReport:
 
 def test_documents_within_the_thresholds_pass() -> None:
     report = report_of(
-        (spec("handbook", "pdf"), pdf("handbook", ["a long first page"] * 4)),
-        (spec("ac", "html"), sections("ac", [None, "1.0"])),
+        (
+            document_spec(id="handbook", format="pdf"),
+            pdf("handbook", ["a long first page"] * 4),
+        ),
+        (document_spec(id="ac", format="html"), sections("ac", [None, "1.0"])),
     )
 
     assert check_report(report, CHECKS) == []
 
 
 def test_a_short_document_fails_with_its_character_count() -> None:
-    report = report_of((spec("tiny", "pdf"), pdf("tiny", ["short"])))
+    report = report_of((document_spec(id="tiny", format="pdf"), pdf("tiny", ["short"])))
 
     assert check_report(report, CHECKS) == [
         "tiny: 5 characters, fewer than the minimum of 10"
@@ -150,7 +136,9 @@ def test_a_short_document_fails_with_its_character_count() -> None:
 
 
 def test_a_page_without_sections_fails_the_section_minimum() -> None:
-    report = report_of((spec("notice", "html"), sections("notice", [None])))
+    report = report_of(
+        (document_spec(id="notice", format="html"), sections("notice", [None]))
+    )
 
     assert check_report(report, CHECKS) == [
         "notice: 0 numbered sections, fewer than the minimum of 1"
@@ -160,7 +148,7 @@ def test_a_page_without_sections_fails_the_section_minimum() -> None:
 def test_too_many_empty_or_garbled_pages_fail_with_their_share() -> None:
     report = report_of(
         (
-            spec("handbook", "pdf"),
+            document_spec(id="handbook", format="pdf"),
             pdf("handbook", ["page one text", "", "", "page four"], garbled=(1, 4)),
         )
     )
@@ -173,8 +161,8 @@ def test_too_many_empty_or_garbled_pages_fail_with_their_share() -> None:
 
 def test_every_failing_document_is_reported() -> None:
     report = report_of(
-        (spec("tiny", "pdf"), pdf("tiny", ["short"])),
-        (spec("notice", "html"), sections("notice", [None])),
+        (document_spec(id="tiny", format="pdf"), pdf("tiny", ["short"])),
+        (document_spec(id="notice", format="html"), sections("notice", [None])),
     )
 
     assert [problem.split(":")[0] for problem in check_report(report, CHECKS)] == [
@@ -195,7 +183,9 @@ def test_check_error_lists_one_problem_per_line() -> None:
 
 
 def test_report_survives_a_json_round_trip() -> None:
-    report = report_of((spec("handbook", "pdf"), pdf("handbook", ["text", ""])))
+    report = report_of(
+        (document_spec(id="handbook", format="pdf"), pdf("handbook", ["text", ""]))
+    )
 
     assert ParseReport.model_validate_json(report.model_dump_json()) == report
 
