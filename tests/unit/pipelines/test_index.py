@@ -6,9 +6,7 @@ from typing import Any
 import pytest
 from qdrant_client import QdrantClient
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
 from hangar.core.config import PipelineConfig, config_hash
-from hangar.core.parsed import PageLocation
 from hangar.embedding.embedder import HashEmbedder
 from hangar.indexing.index import VectorIndexError
 from hangar.indexing.manifest import IndexManifest
@@ -18,31 +16,12 @@ from hangar.pipelines.embed import run_embed
 from hangar.pipelines.index import run_index
 from hangar.pipelines.settings import Settings, load_settings
 from hangar.pipelines.vector_file import read_vectors, write_vectors
+from tests.builders import consecutive_chunks
 
 ROOT = Path(__file__).resolve().parents[3]
 V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
 COLLECTION = "c1__fixed512__bge-m3-dense"
 TEXTS = ["one two three ", "four five", "six seven"]
-
-
-def chunk(start: int, text: str) -> Chunk:
-    end = start + len(text)
-
-    return Chunk(
-        id=chunk_id("example-handbook", "fixed512", start, end),
-        document_id="example-handbook",
-        chunker_id="fixed512",
-        start=start,
-        end=end,
-        text=text,
-        token_count=len(text.split()),
-        passages=[
-            PassageRef(
-                id="example-handbook#p1",
-                location=PageLocation(page_index=1, page_label=None),
-            )
-        ],
-    )
 
 
 def chunks_file(tmp_path: Path) -> Path:
@@ -54,12 +33,7 @@ def vectors_folder(tmp_path: Path) -> Path:
 
 
 def write_chunks(tmp_path: Path, texts: list[str]) -> None:
-    chunks, start = [], 0
-
-    for text in texts:
-        chunks.append(chunk(start, text))
-        start += len(text)
-
+    chunks = consecutive_chunks(texts)
     path = chunks_file(tmp_path)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("\n".join(c.model_dump_json() for c in chunks) + "\n")

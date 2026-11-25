@@ -1,14 +1,10 @@
 import datetime
 from pathlib import Path
-from typing import Any
 
 import pytest
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
-from hangar.core.corpus import DocumentSpec
-from hangar.core.parsed import PageLocation, SectionLocation
-from hangar.core.retrieval import ScoredChunk
 from hangar.generation.prompt import PromptError, load_prompt_template
+from tests.builders import chunk, document_spec, page, scored, section
 
 PROMPTS = Path(__file__).resolve().parents[3] / "prompts"
 
@@ -36,56 +32,6 @@ def write_template(folder: Path, text: str = TEMPLATE, version: str = "test-v1")
     return version
 
 
-def document(**changes: Any) -> DocumentSpec:
-    fields: dict[str, Any] = {
-        "id": "faa-h-8083-30b",
-        "title": "Aviation Maintenance Technician Handbook – General",
-        "authority": "FAA",
-        "type": "handbook",
-        "language": "en",
-        "source_url": "https://example.org/amtg.pdf",
-        "official_url": "https://example.org/amtg.pdf",
-        "format": "pdf",
-        "edition": "B",
-        "content_date": datetime.date(2023, 7, 21),
-        "page_modified_date": datetime.date(2023, 7, 27),
-        "retrieved_on": datetime.date(2026, 11, 4),
-        "status": "active",
-        "sha256": "0" * 64,
-        "reuse_note": "Public domain.",
-    }
-    fields.update(changes)
-
-    return DocumentSpec(**fields)
-
-
-def page(document_id: str, index: int, label: str | None = None) -> PassageRef:
-    return PassageRef(
-        id=f"{document_id}#p{index}",
-        location=PageLocation(page_index=index, page_label=label),
-    )
-
-
-def scored(
-    document_id: str,
-    text: str,
-    rank: int,
-    passages: list[PassageRef] | None = None,
-) -> ScoredChunk:
-    chunk = Chunk(
-        id=chunk_id(document_id, "fixed512", 0, len(text)),
-        document_id=document_id,
-        chunker_id="fixed512",
-        start=0,
-        end=len(text),
-        text=text,
-        token_count=len(text.split()),
-        passages=passages or [page(document_id, 1)],
-    )
-
-    return ScoredChunk(chunk=chunk, score=1 / rank, rank=rank, retriever_id="fixed")
-
-
 def test_the_system_part_and_the_question_become_two_messages(tmp_path: Path) -> None:
     template = load_prompt_template(tmp_path, write_template(tmp_path))
 
@@ -104,16 +50,19 @@ def test_each_chunk_is_written_as_a_numbered_source_with_its_document(
     template = load_prompt_template(tmp_path, write_template(tmp_path))
     results = [
         scored(
-            "faa-h-8083-30b",
-            "Torque the bolts.",
-            1,
-            [page("faa-h-8083-30b", 323, "7-79")],
+            chunk(
+                "Torque the bolts.",
+                passages=[page(323, "7-79", document_id="faa-h-8083-30b")],
+            )
         ),
-        scored("tc-std-571", "Record the work.", 2, [page("tc-std-571", 2)]),
+        scored(
+            chunk("Record the work.", passages=[page(2, document_id="tc-std-571")]),
+            rank=2,
+        ),
     ]
     documents = {
-        "faa-h-8083-30b": document(),
-        "tc-std-571": document(
+        "faa-h-8083-30b": document_spec(),
+        "tc-std-571": document_spec(
             id="tc-std-571",
             title="Standard 571 – Maintenance",
             authority="TC",
@@ -145,10 +94,10 @@ def test_a_chunk_from_a_document_missing_from_the_manifest_is_refused(
     tmp_path: Path,
 ) -> None:
     template = load_prompt_template(tmp_path, write_template(tmp_path))
-    results = [scored("tc-ac-571-999", "Unknown.", 1)]
+    results = [scored(chunk("Unknown.", document_id="tc-ac-571-999"))]
 
     with pytest.raises(PromptError, match="tc-ac-571-999.*not in the manifest"):
-        template.render("How tight?", results, {"faa-h-8083-30b": document()})
+        template.render("How tight?", results, {"faa-h-8083-30b": document_spec()})
 
 
 SYSTEM = "# System\n\nAnswer.\n\n"
@@ -195,12 +144,11 @@ def test_a_doubled_dollar_sign_in_the_instructions_becomes_one(
 
 def test_the_v0_prompt_writes_each_source_as_quoted_material_with_its_labels() -> None:
     template = load_prompt_template(PROMPTS, "answer-v0")
-    section = PassageRef(
-        id="car-sor-96-433#s571.10",
-        location=SectionLocation(label="571.10", heading_path=("Subpart 71",)),
+    passage = section(
+        "571.10", document_id="car-sor-96-433", heading_path=("Subpart 71",)
     )
-    results = [scored("car-sor-96-433", "No person shall sign.", 1, [section])]
-    regulation = document(
+    results = [scored(chunk("No person shall sign.", passages=[passage]))]
+    regulation = document_spec(
         id="car-sor-96-433",
         title="Canadian Aviation Regulations",
         authority="TC",

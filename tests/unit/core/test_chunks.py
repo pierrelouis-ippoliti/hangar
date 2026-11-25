@@ -4,33 +4,16 @@ from typing import Any
 import pydantic
 import pytest
 
-from hangar.core.chunks import Chunk, ChunksMeta, PassageRef, chunk_id, chunker_id
+from hangar.core.chunks import Chunk, ChunksMeta, chunk_id, chunker_id
 from hangar.core.config import ChunkingConfig
-from hangar.core.parsed import PageLocation
-
-DOCUMENT_ID = "example-handbook"
-CHUNKER_ID = "fixed512"
+from tests.builders import CHUNKER_ID, DOCUMENT_ID, chunk
 
 
-def page_ref(index: int) -> PassageRef:
-    return PassageRef(
-        id=f"{DOCUMENT_ID}#p{index}",
-        location=PageLocation(page_index=index, page_label=None),
-    )
-
-
-def chunk(**changes: Any) -> Chunk:
-    fields: dict[str, Any] = {
-        "id": chunk_id(DOCUMENT_ID, CHUNKER_ID, 10, 15),
-        "document_id": DOCUMENT_ID,
-        "chunker_id": CHUNKER_ID,
-        "start": 10,
-        "end": 15,
-        "text": "hello",
-        "token_count": 1,
-        "passages": [page_ref(1)],
-    }
-    fields.update(changes)
+def validated_chunk(**changes: Any) -> Chunk:
+    """
+    Validate a chunk of "hello" at offsets 10 to 15, with the given fields changed.
+    """
+    fields = chunk("hello", start=10).model_dump() | changes
 
     return Chunk.model_validate(fields)
 
@@ -75,34 +58,34 @@ def test_chunker_id_names_the_overlap_when_there_is_one() -> None:
 
 
 def test_a_valid_chunk_survives_a_json_round_trip() -> None:
-    original = chunk()
+    original = validated_chunk()
 
     assert Chunk.model_validate_json(original.model_dump_json()) == original
 
 
 def test_a_chunk_must_hold_at_least_one_character() -> None:
     with pytest.raises(pydantic.ValidationError, match="must come after start"):
-        chunk(id=chunk_id(DOCUMENT_ID, CHUNKER_ID, 10, 10), end=10, text="")
+        validated_chunk(id=chunk_id(DOCUMENT_ID, CHUNKER_ID, 10, 10), end=10, text="")
 
 
 def test_a_chunk_end_cannot_come_before_its_start() -> None:
     with pytest.raises(pydantic.ValidationError, match="must come after start"):
-        chunk(id=chunk_id(DOCUMENT_ID, CHUNKER_ID, 10, 5), end=5)
+        validated_chunk(id=chunk_id(DOCUMENT_ID, CHUNKER_ID, 10, 5), end=5)
 
 
 def test_a_chunk_text_must_match_its_offsets() -> None:
     with pytest.raises(pydantic.ValidationError, match="has 4 characters"):
-        chunk(text="hell")
+        validated_chunk(text="hell")
 
 
 def test_a_chunk_id_must_derive_from_its_content_and_location() -> None:
     with pytest.raises(pydantic.ValidationError, match="should have the ID"):
-        chunk(id="0123456789abcdef")
+        validated_chunk(id="0123456789abcdef")
 
 
 def test_a_chunk_covers_at_least_one_passage() -> None:
     with pytest.raises(pydantic.ValidationError, match="passages"):
-        chunk(passages=[])
+        validated_chunk(passages=[])
 
 
 def meta(**changes: Any) -> ChunksMeta:

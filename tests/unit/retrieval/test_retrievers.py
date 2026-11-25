@@ -1,12 +1,11 @@
 import pytest
 from qdrant_client import QdrantClient
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
-from hangar.core.parsed import PageLocation
 from hangar.embedding.embedder import HashEmbedder
 from hangar.indexing.qdrant import QdrantIndex
 from hangar.retrieval.dense import DenseRetriever
 from hangar.retrieval.retriever import FixedRetriever
+from tests.builders import consecutive_chunks
 
 TEXTS = [
     "torque the propeller bolts ",
@@ -15,36 +14,7 @@ TEXTS = [
     "inspect the fuel filter ",
     "check the tire pressure",
 ]
-
-
-def make_chunks() -> list[Chunk]:
-    chunks, start = [], 0
-
-    for text in TEXTS:
-        end = start + len(text)
-        chunks.append(
-            Chunk(
-                id=chunk_id("example-handbook", "fixed512", start, end),
-                document_id="example-handbook",
-                chunker_id="fixed512",
-                start=start,
-                end=end,
-                text=text,
-                token_count=len(text.split()),
-                passages=[
-                    PassageRef(
-                        id="example-handbook#p1",
-                        location=PageLocation(page_index=1, page_label=None),
-                    )
-                ],
-            )
-        )
-        start = end
-
-    return chunks
-
-
-CHUNKS = make_chunks()
+CHUNKS = consecutive_chunks(TEXTS)
 
 
 def dense(top_k: int) -> DenseRetriever:

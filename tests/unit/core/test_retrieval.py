@@ -1,40 +1,8 @@
-from typing import Any
-
 import pydantic
 import pytest
 
-from hangar.core.chunks import Chunk, PassageRef, chunk_id
-from hangar.core.parsed import PageLocation
 from hangar.core.retrieval import ScoredChunk
-
-TEXT = "torque the bolt"
-CHUNK = Chunk(
-    id=chunk_id("example-handbook", "fixed512", 0, len(TEXT)),
-    document_id="example-handbook",
-    chunker_id="fixed512",
-    start=0,
-    end=len(TEXT),
-    text=TEXT,
-    token_count=3,
-    passages=[
-        PassageRef(
-            id="example-handbook#p1",
-            location=PageLocation(page_index=1, page_label=None),
-        )
-    ],
-)
-
-
-def scored(**changes: Any) -> ScoredChunk:
-    fields: dict[str, Any] = {
-        "chunk": CHUNK,
-        "score": 0.71,
-        "rank": 1,
-        "retriever_id": "dense",
-    }
-    fields.update(changes)
-
-    return ScoredChunk.model_validate(fields)
+from tests.builders import scored
 
 
 def test_a_scored_chunk_survives_a_json_round_trip() -> None:

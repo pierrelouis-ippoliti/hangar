@@ -10,6 +10,7 @@ from hangar.parsing.pdf import PdfPageParser
 from hangar.parsing.tc_html import TcHtmlParser
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.registry import build_llm_client, build_parsers, build_retriever
+from tests.builders import consecutive_chunks
 
 V0_CONFIG = Path(__file__).resolve().parents[3] / "configs" / "pipelines" / "v0.yaml"
 
@@ -26,29 +27,10 @@ def test_each_format_gets_its_parser() -> None:
 def test_the_retriever_returns_the_configured_top_k() -> None:
     from qdrant_client import QdrantClient
 
-    from hangar.core.chunks import Chunk, PassageRef, chunk_id
-    from hangar.core.parsed import PageLocation
     from hangar.embedding.embedder import HashEmbedder
     from hangar.indexing.qdrant import QdrantIndex
 
-    chunks = [
-        Chunk(
-            id=chunk_id("example-handbook", "fixed512", n, n + 1),
-            document_id="example-handbook",
-            chunker_id="fixed512",
-            start=n,
-            end=n + 1,
-            text=str(n),
-            token_count=1,
-            passages=[
-                PassageRef(
-                    id="example-handbook#p1",
-                    location=PageLocation(page_index=1, page_label=None),
-                )
-            ],
-        )
-        for n in range(7)
-    ]
+    chunks = consecutive_chunks([str(n) for n in range(7)])
     embedder = HashEmbedder()
     index = QdrantIndex(QdrantClient(":memory:"), "c1__fixed512__test")
     index.recreate(dimension=embedder.dimension)
