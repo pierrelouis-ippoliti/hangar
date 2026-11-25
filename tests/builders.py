@@ -14,12 +14,20 @@ from hangar.core.completions import Completion
 from hangar.core.corpus import DocumentSpec
 from hangar.core.costs import Cost
 from hangar.core.parsed import PageLocation, SectionLocation
-from hangar.core.records import AnswerRecord, StageTimings
+from hangar.core.provenance import CodeVersion
+from hangar.core.records import (
+    AnswerRecord,
+    ModelVersions,
+    RunRecord,
+    StageTimings,
+    run_totals,
+)
 from hangar.core.retrieval import ScoredChunk
 
 DOCUMENT_ID = "example-handbook"
 CHUNKER_ID = "fixed512"
 RUN_ID = "20261125T120000Z-1a2b3c4d"
+STARTED_AT = datetime.datetime(2026, 11, 25, 12, 0, 0, tzinfo=datetime.UTC)
 
 
 def page(
@@ -212,3 +220,33 @@ def answer_record(**changes: Any) -> AnswerRecord:
     fields.update(changes)
 
     return AnswerRecord.model_validate(fields)
+
+
+def run_record(**changes: Any) -> RunRecord:
+    """
+    The record of a clean 90-second run with one answer.
+
+    Args:
+        **changes: Field values that replace the defaults, such as
+            ``code=None``.
+
+    Returns:
+        The validated run record.
+    """
+    fields: dict[str, Any] = {
+        "run_id": RUN_ID,
+        "config_hash": "1a2b3c4d" + "0" * 56,
+        "code": CodeVersion(commit="0123456789" * 4, dirty=False),
+        "snapshot": "c1",
+        "models": ModelVersions(
+            embedding_model="BAAI/bge-m3",
+            embedding_revision="5617a9f61b028005a4858fdac845db406aefb181",
+            generation_model="mistral-small-2603",
+        ),
+        "started_at": STARTED_AT,
+        "ended_at": STARTED_AT + datetime.timedelta(seconds=90),
+        "totals": run_totals([answer_record()]),
+    }
+    fields.update(changes)
+
+    return RunRecord.model_validate(fields)

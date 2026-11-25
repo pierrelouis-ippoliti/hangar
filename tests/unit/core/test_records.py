@@ -1,42 +1,12 @@
 import json
-from datetime import UTC, datetime, timedelta
-from typing import Any
+from datetime import datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
 from hangar.core.costs import Cost
-from hangar.core.provenance import CodeVersion
-from hangar.core.records import (
-    ModelVersions,
-    RunRecord,
-    RunTotals,
-    StageTimings,
-    run_totals,
-)
-from tests.builders import RUN_ID, answer_record, completion
-
-STARTED_AT = datetime(2026, 11, 25, 12, 0, 0, tzinfo=UTC)
-
-
-def run_record(**changes: Any) -> RunRecord:
-    fields: dict[str, Any] = {
-        "run_id": RUN_ID,
-        "config_hash": "1a2b3c4d" + "0" * 56,
-        "code": CodeVersion(commit="0123456789" * 4, dirty=False),
-        "snapshot": "c1",
-        "models": ModelVersions(
-            embedding_model="BAAI/bge-m3",
-            embedding_revision="5617a9f61b028005a4858fdac845db406aefb181",
-            generation_model="mistral-small-2603",
-        ),
-        "started_at": STARTED_AT,
-        "ended_at": STARTED_AT + timedelta(seconds=90),
-        "totals": run_totals([answer_record()]),
-    }
-    fields.update(changes)
-
-    return RunRecord.model_validate(fields)
+from hangar.core.records import RunRecord, RunTotals, StageTimings, run_totals
+from tests.builders import STARTED_AT, answer_record, completion, run_record
 
 
 def test_an_answer_record_holds_every_field_of_the_issue() -> None:
