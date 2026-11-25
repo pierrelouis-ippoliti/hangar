@@ -19,6 +19,7 @@ from hangar.core.records import (
     AnswerRecord,
     ModelVersions,
     RunRecord,
+    ScoredChunkRef,
     StageTimings,
     run_totals,
 )
@@ -210,7 +211,7 @@ def answer_record(**changes: Any) -> AnswerRecord:
         "run_id": RUN_ID,
         "question_id": None,
         "question": "How tight should the bolt be?",
-        "scored_chunks": (scored(retrieved),),
+        "scored_chunks": (ScoredChunkRef.of(scored(retrieved)),),
         "prompt_version": "answer-v0",
         "completion": completion(),
         "citations": (citation(retrieved),),

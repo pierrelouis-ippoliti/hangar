@@ -20,10 +20,11 @@ from pydantic import (
     model_validator,
 )
 
-from hangar.core.chunks import Sha256
+from hangar.core.chunks import CHUNK_ID_LENGTH, PassageRef, Sha256
 from hangar.core.citations import Citation
 from hangar.core.completions import Completion
 from hangar.core.config import CommitHash
+from hangar.core.corpus import DOCUMENT_ID_PATTERN
 from hangar.core.costs import Cost, total_cost
 from hangar.core.provenance import CodeVersion
 from hangar.core.retrieval import ScoredChunk
@@ -52,6 +53,46 @@ class StageTimings(RecordModel):
     generation_seconds: NonNegativeFloat
 
 
+class ScoredChunkRef(RecordModel):
+    """
+    A retrieved chunk as an answer record keeps it: where it is, not its text.
+
+    Answer records are committed, and the documents are never redistributed
+    (ADR-0003), so the record keeps enough to find the chunk again in the
+    chunks file, and no more.
+
+    Attributes:
+        chunk_id: The chunk's ID.
+        score: How well it matched the question, as the retriever measured
+            it. Higher is better.
+        document_id: The manifest ID of the chunk's document.
+        passages: The pages or sections the chunk covers, in text order.
+    """
+
+    chunk_id: str = Field(pattern=rf"^[0-9a-f]{{{CHUNK_ID_LENGTH}}}$")
+    score: float
+    document_id: str = Field(pattern=DOCUMENT_ID_PATTERN)
+    passages: tuple[PassageRef, ...] = Field(min_length=1)
+
+    @classmethod
+    def of(cls, scored: ScoredChunk) -> Self:
+        """
+        Make the reference of a retrieval result.
+
+        Args:
+            scored: The retrieved chunk, with its score.
+
+        Returns:
+            The reference, without the chunk's text.
+        """
+        return cls(
+            chunk_id=scored.chunk.id,
+            score=scored.score,
+            document_id=scored.chunk.document_id,
+            passages=scored.chunk.passages,
+        )
+
+
 class AnswerRecord(RecordModel):
     """
     Everything about one answer: the question, what was found, what was written.
@@ -61,7 +102,8 @@ class AnswerRecord(RecordModel):
         question_id: The seed question's ID, such as ``q-0001``, or None
             for a question asked with ``hangar ask``.
         question: The question as asked.
-        scored_chunks: The retrieved chunks, best first.
+        scored_chunks: The retrieved chunks, best first, without their
+            text.
         prompt_version: The prompt file used, such as ``answer-v0``.
         completion: The language model's completion, with its token
             counts.
@@ -74,7 +116,7 @@ class AnswerRecord(RecordModel):
     run_id: str = Field(min_length=1)
     question_id: str | None
     question: str = Field(min_length=1)
-    scored_chunks: tuple[ScoredChunk, ...]
+    scored_chunks: tuple[ScoredChunkRef, ...]
     prompt_version: str = Field(min_length=1)
     completion: Completion
     citations: tuple[Citation, ...]

@@ -5,8 +5,22 @@ import pytest
 from pydantic import ValidationError
 
 from hangar.core.costs import Cost
-from hangar.core.records import RunRecord, RunTotals, StageTimings, run_totals
-from tests.builders import STARTED_AT, answer_record, completion, run_record
+from hangar.core.records import (
+    RunRecord,
+    RunTotals,
+    ScoredChunkRef,
+    StageTimings,
+    run_totals,
+)
+from tests.builders import (
+    STARTED_AT,
+    answer_record,
+    chunk,
+    completion,
+    page,
+    run_record,
+    scored,
+)
 
 
 def test_an_answer_record_holds_every_field_of_the_issue() -> None:
@@ -24,6 +38,37 @@ def test_an_answer_record_holds_every_field_of_the_issue() -> None:
         "cost",
     }
     assert set(written["timings"]) == {"retrieval_seconds", "generation_seconds"}
+
+
+def test_an_answer_record_keeps_no_chunk_text() -> None:
+    # The documents are never redistributed (ADR-0003), and answer records
+    # are committed.
+    record = answer_record(
+        scored_chunks=(ScoredChunkRef.of(scored(chunk("secret words"))),)
+    )
+
+    written = json.loads(record.model_dump_json())
+
+    assert "secret words" not in record.model_dump_json()
+    assert set(written["scored_chunks"][0]) == {
+        "chunk_id",
+        "score",
+        "document_id",
+        "passages",
+    }
+
+
+def test_a_chunk_reference_keeps_the_id_score_document_and_passages() -> None:
+    retrieved = chunk(passages=[page(3), page(4)])
+
+    ref = ScoredChunkRef.of(scored(retrieved, score=0.82))
+
+    assert ref == ScoredChunkRef(
+        chunk_id=retrieved.id,
+        score=0.82,
+        document_id=retrieved.document_id,
+        passages=retrieved.passages,
+    )
 
 
 def test_an_answer_record_reads_back_from_its_json() -> None:
