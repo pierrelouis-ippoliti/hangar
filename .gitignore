@@ -15,3 +15,7 @@ data/
 
 # Model weights, when HF_HOME points inside the repository
 .cache/
+
+# Local Claude Code files: personal settings and agent worktrees
+.claude/settings.local.json
+.claude/worktrees/
