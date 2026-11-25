@@ -59,7 +59,8 @@ def test_raw_artifact_validators_may_be_missing() -> None:
     [
         {"sha256": "not-a-hash"},
         {"size_bytes": -1},
-        {"fetched_at": datetime.datetime(2026, 11, 5, 9, 30)},
+        # A naive time on purpose: the model must refuse it.
+        {"fetched_at": datetime.datetime(2026, 11, 5, 9, 30)},  # noqa: DTZ001
     ],
     ids=["bad hash", "negative size", "time without a time zone"],
 )

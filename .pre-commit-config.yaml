@@ -27,3 +27,13 @@ repos:
         entry: uv run --frozen ruff format --force-exclude
         language: system
         types_or: [python, pyi]
+
+  # A loop states its stop condition in its header. make check runs the same
+  # test, so CI enforces it too.
+  - repo: local
+    hooks:
+      - id: no-while-true
+        name: no while True
+        entry: '^\s*while\s+True\s*:'
+        language: pygrep
+        types: [python]
