@@ -1,25 +1,11 @@
 from hangar.core.chunks import PassageRef, chunk_id
 from hangar.core.citations import Citation
-from hangar.core.parsed import PageLocation, SectionLocation
 from hangar.core.prompts import Source
 from hangar.generation.citations import parse_citations
+from tests.builders import page, section
 
 HANDBOOK = "faa-h-8083-30b"
 REGULATION = "car-sor-96-433"
-
-
-def page(index: int, label: str | None = None) -> PassageRef:
-    return PassageRef(
-        id=f"{HANDBOOK}#p{index}",
-        location=PageLocation(page_index=index, page_label=label),
-    )
-
-
-def section(label: str) -> PassageRef:
-    return PassageRef(
-        id=f"{REGULATION}#s{label}",
-        location=SectionLocation(label=label, heading_path=()),
-    )
 
 
 def source(number: int, document_id: str, passages: tuple[PassageRef, ...]) -> Source:
@@ -32,8 +18,15 @@ def source(number: int, document_id: str, passages: tuple[PassageRef, ...]) -> S
 
 
 SOURCES = (
-    source(1, HANDBOOK, (page(323, "7-79"), page(324, "7-80"))),
-    source(2, REGULATION, (section("571.10"),)),
+    source(
+        1,
+        HANDBOOK,
+        (
+            page(323, "7-79", document_id=HANDBOOK),
+            page(324, "7-80", document_id=HANDBOOK),
+        ),
+    ),
+    source(2, REGULATION, (section("571.10", document_id=REGULATION),)),
 )
 
 
@@ -46,7 +39,7 @@ def test_a_marker_in_range_gives_a_valid_citation_with_its_source() -> None:
             valid=True,
             chunk_id=SOURCES[1].chunk_id,
             document_id=REGULATION,
-            passages=(section("571.10"),),
+            passages=(section("571.10", document_id=REGULATION),),
         ),
     )
 
