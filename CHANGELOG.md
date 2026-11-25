@@ -9,6 +9,7 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 Added:
 
 - The v0 prompt `prompts/answer-v0.md`, which asks for a numbered citation after every claim and labels each source with its authority, type and content date, and the prompt renderer, which returns the messages and the numbered source map. A test pins each prompt file's hash, so prompts are never edited in place (#24).
+- The language model client interface, the Mistral client for `mistral-small-2603` with a limit of one request per second and retries on 429 and 5xx answers, the fake client for tests, a live test marked `llm`, and ADR-0007 on Mistral Small 4 through the API. The downloader's request spacing, retryable statuses and backoff moved to `hangar.pacing`, which both now share (#25).
 
 ### 0.0.0a3 · M3 Chunk, embed, index (2026-11-18)
 
