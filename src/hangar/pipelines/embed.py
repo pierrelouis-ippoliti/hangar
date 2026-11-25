@@ -10,7 +10,7 @@ from hangar.core.vectors import EmbedderInfo, VectorRecord, VectorsMeta, embedde
 from hangar.embedding.embedder import Embedder, EmbedError
 from hangar.files import file_sha256, replace_folder, write_text
 from hangar.pipelines.chunk_file import read_chunks
-from hangar.pipelines.provenance import code_version
+from hangar.pipelines.provenance import describe_code_version
 from hangar.pipelines.registry import build_embedder
 from hangar.pipelines.settings import Settings
 from hangar.pipelines.vector_file import write_vectors
@@ -61,7 +61,7 @@ def run_embed(
 
     chunks = read_chunks(chunks_path)
     logger.info("read %s: %d chunks", chunks_path, len(chunks))
-    logger.info("code at %s", code_version(Path.cwd()))
+    logger.info("code at %s", describe_code_version(Path.cwd()))
 
     embedder = embedder or build_embedder(config.embedding, settings.device)
     logger.info(

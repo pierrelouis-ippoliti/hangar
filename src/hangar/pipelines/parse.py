@@ -16,7 +16,7 @@ from hangar.parsing.report import (
     check_report,
     document_report,
 )
-from hangar.pipelines.provenance import code_version
+from hangar.pipelines.provenance import describe_code_version
 from hangar.pipelines.registry import build_parsers
 from hangar.pipelines.settings import Settings
 
@@ -55,7 +55,7 @@ def run_parse(
     logger.info(
         "read %s: %d documents in snapshot %s", manifest, len(documents), snapshot
     )
-    logger.info("code at %s", code_version(Path.cwd()))
+    logger.info("code at %s", describe_code_version(Path.cwd()))
 
     parsers = build_parsers(config.parsing)
     raw_dir = settings.data_dir / "raw"
