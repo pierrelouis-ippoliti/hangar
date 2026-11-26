@@ -28,6 +28,11 @@ from hangar.pipelines.embed import run_embed
 from hangar.pipelines.fetch import run_fetch
 from hangar.pipelines.index import run_index
 from hangar.pipelines.parse import run_parse
+from hangar.pipelines.passage import (
+    format_locations,
+    format_passage,
+    load_parsed_document,
+)
 from hangar.pipelines.search import format_results, run_search
 from hangar.pipelines.settings import Settings, load_settings
 
@@ -40,6 +45,8 @@ def run_command(
     question: str | None = None,
     *,
     record: bool = False,
+    document: str | None = None,
+    location: str | None = None,
 ) -> int:
     """
     Run one ``hangar`` subcommand as a logged run.
@@ -58,6 +65,9 @@ def run_command(
         question: The question, for the commands that take one, such as
             ``search``.
         record: For ``ask``, whether to write the answer record too.
+        document: For ``passage``, the document ID.
+        location: For ``passage``, the location of the page or section to
+            print, or None to list the document's locations.
 
     Returns:
         The exit code: 0 on success, 1 on failure.
@@ -87,7 +97,9 @@ def run_command(
             logger.info("run ID %s, logging to %s", run_id, log_file)
             logger.info("read %s, config hash %s", config_path, config_digest)
             started = time.monotonic()
-            exit_code = _run(command, settings, config, question, run_id, record)
+            exit_code = _run(
+                command, settings, config, question, run_id, record, document, location
+            )
 
             if exit_code == 0:
                 logger.info(
@@ -112,6 +124,8 @@ def _run(
     question: str | None,
     run_id: str,
     record: bool,
+    document: str | None,
+    location: str | None,
 ) -> int:
     if command == "doctor":
         return _doctor(settings, config)
@@ -146,6 +160,11 @@ def _run(
 
     if command == "ask":
         return _ask(settings, config, question, run_id, record)
+
+    if command == "passage" and document is not None:
+        print(_passage(settings, config, document, location))
+
+        return 0
 
     logger.error("hangar %s is not built yet", command)
 
@@ -204,6 +223,19 @@ def _ask(
     print(run_ask(settings, config, question, run_id, record=record))
 
     return 0
+
+
+def _passage(
+    settings: Settings, config: PipelineConfig, document_id: str, location: str | None
+) -> str:
+    document = load_parsed_document(settings, config, document_id)
+
+    # Like search results, the text goes to standard output, so it can be
+    # piped or saved.
+    if location is None:
+        return format_locations(document)
+
+    return format_passage(document, location)
 
 
 def _given_question(command: str, question: str | None) -> str | None:

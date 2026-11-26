@@ -97,7 +97,7 @@ import-linter checks these rules in CI, through the contracts in `pyproject.toml
 
 ## Commands and logs
 
-`hangar` has one subcommand per stage, plus `doctor`. Each takes `--config`, the pipeline file (`configs/pipelines/v0.yaml` by default). `cli` only parses the command line; `pipelines.commands` runs the command:
+`hangar` has one subcommand per stage, plus `doctor` and `passage` (see [Evaluate](#evaluate)). Each takes `--config`, the pipeline file (`configs/pipelines/v0.yaml` by default). `cli` only parses the command line; `pipelines.commands` runs the command:
 
 1. It reads the environment settings and the pipeline file. An unusable file of either kind is reported on the screen, since no run has started yet.
 2. It starts a run with its own ID, such as `20261105T142233Z-1a2b3c4d`: the start time in UTC and the first eight characters of the configuration hash. The log file and the run record of an answering run share this ID. Two runs of the same configuration started in the same second get the same ID, and their logs go to one file.
