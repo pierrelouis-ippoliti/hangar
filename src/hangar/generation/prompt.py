@@ -19,10 +19,11 @@ from pathlib import Path
 from string import Template
 
 from hangar.core.chunks import Chunk, describe_passages
-from hangar.core.corpus import Authority, DocumentSpec, DocumentType
+from hangar.core.corpus import DocumentSpec
 from hangar.core.errors import HangarError
 from hangar.core.prompts import Message, RenderedPrompt, Source
 from hangar.core.retrieval import ScoredChunk
+from hangar.generation.presentation import source_label
 
 PART_NAMES = ("System", "User", "Source")
 PART_HEADINGS = {f"# {name}": name for name in PART_NAMES}
@@ -32,17 +33,6 @@ PLACEHOLDERS = {
     "System": frozenset[str](),
     "User": frozenset({"question", "sources"}),
     "Source": frozenset({"number", "label", "title", "date", "location", "text"}),
-}
-
-# A source's label joins its authority and its type, such as "FAA handbook
-# guidance" or "Transport Canada advisory circular", so the model can tell
-# guidance from requirements.
-AUTHORITY_NAMES: dict[Authority, str] = {"FAA": "FAA", "TC": "Transport Canada"}
-TYPE_NAMES: dict[DocumentType, str] = {
-    "handbook": "handbook guidance",
-    "regulation": "regulation",
-    "standard": "standard",
-    "advisory_circular": "advisory circular",
 }
 
 
@@ -133,11 +123,9 @@ class PromptTemplate:
                 "which is not in the manifest"
             )
 
-        label = f"{AUTHORITY_NAMES[document.authority]} {TYPE_NAMES[document.type]}"
-
         return self.source.substitute(
             number=number,
-            label=label,
+            label=source_label(document),
             title=document.title,
             date=document.content_date.isoformat(),
             location=describe_passages(chunk.passages),

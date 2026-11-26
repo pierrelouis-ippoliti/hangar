@@ -13,6 +13,7 @@ Added:
 - The citation parser, which turns each marker such as `[2]` in an answer into a citation with its chunk, document and pages or sections, and flags a marker outside the source map as invalid (#26).
 - Firmer tests and checks: shared test builders in `tests/builders.py`, a guard that refuses network connections in tests not marked `model`, `llm` or `corpus`, a ban on `while True` in `make check` and pre-commit, ruff's `DTZ` rules, and an import-linter contract that keeps I/O modules out of `hangar.core` (#81).
 - Answer and run records, the run recorder that writes them to `results/` as JSON lines and `run.json`, and cost tracking from the configuration's price table, with the free-tier cost and the list-price cost of every answer. A release run refuses a checkout with changes. Run IDs are now the start time plus a short configuration hash, shared by the log file and the run record, and every command that succeeds logs its duration (#27).
+- The answer pipeline and `hangar ask`, which answers a question from the top 5 chunks and prints each cited source with its document, pages or sections, authority and type, content date and attribution from `NOTICE.md`, flags invalid citation markers, and ends every answer with the study-aid notice. `--record` writes the answer record and the run record under the command's run ID (#28).
 
 ### 0.0.0a3 · M3 Chunk, embed, index (2026-11-18)
 

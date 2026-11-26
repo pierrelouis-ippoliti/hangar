@@ -116,6 +116,8 @@ The language model's output can vary even at temperature 0, so every answer is s
 - **Answer record**, one per question: the run ID, the seed question's ID (none for `hangar ask`), the question, a reference to each retrieved chunk (its ID, score, document ID and pages or sections, never its text), the prompt version, the completion with its token counts, the citations (invalid ones included), the retrieval and generation times, and the cost.
 - **Run record**, one per run: the run ID, the configuration hash, the git commit and dirty flag (none outside a git checkout), whether it was a release run, the snapshot, the embedding model and its revision, the language model's dated ID, the start and end times, and the totals over its answers: the number of answers, the input and output tokens, the cost, and the retrieval and generation times.
 
+An answer cut off at the output token limit shows in its record as `completion.finish_reason` set to `length`, instead of `stop`.
+
 Answer records are committed, and the documents are never redistributed ([ADR-0003](adr/0003-licences.md)), so a record keeps where each chunk is, not what it says; the chunk ID finds the text again in the chunks file.
 
 Times are in seconds. Retrieval time includes embedding the question. Generation time is the whole language model call, waits for the rate limit and retries included, so it can be longer than the completion's latency, which counts only the request that succeeded.
@@ -319,7 +321,7 @@ Each search loads the 2.3 GB model again, which takes most of its 9 seconds on t
 
 ### Generate
 
-Generation turns a question and its chunks into a cited answer. `hangar ask` is still to be written, in #28; the records it writes are described under [Run records](#run-records).
+Generation turns a question and its chunks into a cited answer. `hangar ask` runs the whole answering path for one question; the records it can write are described under [Run records](#run-records).
 
 **The prompt.** A prompt file, such as `prompts/answer-v0.md`, has three parts, each starting with a level-1 heading on its own line:
 
@@ -329,7 +331,7 @@ Generation turns a question and its chunks into a cited answer. `hangar ask` is 
 
 The placeholders follow Python's `string.Template`, so a literal dollar sign is written `$$`. The prompt file holds the instructions and the layout of each source, so a new prompt with new wording or layout needs no code change. The values put into a source come from code: the authority and type labels, and the page or section wording. Each part must use all of its placeholders and no others, and a broken file stops the run with an error that names the file and the problem.
 
-The v0 prompt asks for a numbered marker such as `[2]` after every claim, and for Transport Canada requirements to be quoted word for word. It also asks the model to say when the sources don't cover the question. Each source sits in a `<source>` element that the prompt calls quoted material, and the model is told to ignore any instruction inside it. The study-aid notice is not left to the model: `hangar ask` adds it after every answer (#28).
+The v0 prompt asks for a numbered marker such as `[2]` after every claim, and for Transport Canada requirements to be quoted word for word. It also asks the model to say when the sources don't cover the question. Each source sits in a `<source>` element that the prompt calls quoted material, and the model is told to ignore any instruction inside it. The study-aid notice is not left to the model: `hangar ask` adds it after every answer.
 
 **Prompt files are never edited in place.** Every answer record names its prompt version, so a changed prompt is a new file, such as `answer-v1.md`. A unit test pins the SHA-256 of each prompt file, so an edit in place fails CI.
 
@@ -339,7 +341,7 @@ The v0 prompt asks for a numbered marker such as `[2]` after every claim, and fo
 - the messages: the system message, then the user message;
 - the source map: one `Source` per chunk, numbered from 1 in rank order, with the chunk ID, the document ID and the passages the chunk covers. The citation parser (#26) uses it to turn a marker into a document and its pages or sections.
 
-Each source is labelled with its authority and type, such as "FAA handbook guidance" or "Transport Canada advisory circular". It also shows the document's title, its content date and where the chunk sits, written the same way as in `hangar search`: `p. 323 (7-79)` or `§ 571.10`. A chunk whose document is missing from the manifest stops the run.
+Each source is labelled with its authority and type, such as "FAA handbook guidance" or "Transport Canada advisory circular", by `generation.presentation.source_label`, which `hangar ask` uses too. It also shows the document's title, its content date and where the chunk sits, written the same way as in `hangar search`: `p. 323 (7-79)` or `§ 571.10`. A chunk whose document is missing from the manifest stops the run.
 
 **The language model client** (`generation.llm`). `LlmClient` is the interface: its `complete` method takes the messages, the temperature and the output token limit, and returns a `core.completions.Completion` with the text, the model ID the provider reports, the input and output token counts, the latency and the finish reason (`stop`, or `length` for an answer cut off at the limit). The latency is that of the request that succeeded, without the waits for the rate limit or the failed attempts. There are two clients:
 
@@ -358,6 +360,48 @@ A live test (`uv run pytest -m llm tests/llm`, local only) sends the v0 prompt t
 - An answer with no marker gives no citation.
 
 Only a number in square brackets counts as a marker, as the v0 prompt asks: `[1][3]` gives two citations, while `[1, 3]` or `[OFF]` give none. Checking that a cited source supports its claim is left to v7.
+
+**The answer pipeline** (`pipelines.answer.AnswerPipeline`). It is built once from the retriever, the prompt template, the manifest entries of the snapshot, the language model client and the pipeline configuration. Its `answer` method takes a question, the run ID and, for a seed question, its ID, and returns a `core.records.AnswerRecord`:
+
+1. It retrieves the top 5 chunks.
+2. It renders the prompt.
+3. It asks the language model, at the configured temperature (0) and output limit (512 tokens).
+4. It parses the citations, and logs a warning that names any invalid marker.
+5. It builds the answer record: a reference to each chunk (never its text), the prompt version, the completion, the citations, the retrieval and generation times, and the cost, priced with `generation.model`.
+
+It lives in `pipelines` because it combines two stages, retrieval and generation, which may not import each other. `hangar seed run` will answer every seed question with it.
+
+**How an answer is shown** (`generation.presentation`). `format_answer` writes the answer for the screen:
+
+- the answer as the model wrote it, markers included;
+- each citation, in the order its marker first appears. A valid one shows its document and pages or sections, written as in `hangar search`, then its authority and type label with the document's content date, then its attribution. An invalid one is flagged: `[7] invalid marker: no source has this number`;
+- a line saying the answer cites no source, when no citation is valid;
+- the corpus snapshot it was answered from, then the study-aid notice, last.
+
+The attribution follows each source's terms in [`NOTICE.md`](../NOTICE.md), as [ADR-0003](adr/0003-licences.md) requires for every quote shown: the full title, the publisher and the official URL. An FAA handbook names the Federal Aviation Administration. The CARs name the Department of Justice Canada, their publisher, and say they are not the official version. A Transport Canada standard or advisory circular says it is a copy of the version at its official URL, and that Hangar is not affiliated with or endorsed by Transport Canada.
+
+**The command.** `hangar ask "question"`:
+
+1. A blank question stops the command before anything is loaded.
+2. It builds the Mistral client, reads the manifest and the prompt file, and with `--record` creates the run's folder. A missing API key, a broken file or an existing folder stops the command before the 2.3 GB embedding model loads.
+3. It builds the retriever as `hangar search` does, then answers with the answer pipeline. The answer record carries the run ID of the command's log file.
+4. It prints the answer on standard output, apart from the log lines on standard error:
+
+   ```text
+   Replace the ELT battery when half its useful life has passed [1]. Test it [7].
+
+   Sources:
+   [1] faa-h-8083-31b, p. 142 (7-12)
+       FAA handbook guidance, content date 2023-07-18
+       FAA-H-8083-31B, Aviation Maintenance Technician Handbook – Airframe, Federal Aviation Administration. The official version is at https://www.faa.gov/….
+   [7] invalid marker: no source has this number
+
+   Answered from corpus snapshot c1.
+
+   Hangar is a study and lookup aid, not approved maintenance data. Its answers can be wrong or incomplete. Always check the current official documents and follow your organisation's approved procedures.
+   ```
+
+5. With `--record`, it writes the answer record to `<data folder>/runs/<run ID>/answers.jsonl` and the run record to `run.json` beside it. Without it, nothing is written but the log.
 
 ### Evaluate
 

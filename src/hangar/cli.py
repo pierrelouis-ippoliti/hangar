@@ -21,7 +21,7 @@ COMMANDS = {
 }
 
 # The commands that take a question as their first argument.
-QUESTION_COMMANDS = {"search"}
+QUESTION_COMMANDS = {"search", "ask"}
 
 SEED_COMMANDS = {
     "run": "answer every seed question",
@@ -35,7 +35,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     Returns:
         A parser with `--version` and one subcommand per pipeline stage.
-        Every subcommand takes `--config`; `search` also takes a question.
+        Every subcommand takes `--config`; `search` and `ask` also take a
+        question, and `ask` takes `--record`.
     """
     parser = argparse.ArgumentParser(
         prog="hangar",
@@ -55,6 +56,13 @@ def build_parser() -> argparse.ArgumentParser:
 
         if name in QUESTION_COMMANDS:
             command.add_argument("question", help="the question, in quotes")
+
+        if name == "ask":
+            command.add_argument(
+                "--record",
+                action="store_true",
+                help="also write the answer record to <data folder>/runs/<run ID>/",
+            )
 
     seed = commands.add_parser("seed", help="run or summarize the seed questions")
 
@@ -86,7 +94,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     if command == "seed":
         command = f"seed {args.seed_command}"
 
-    return run_command(command, args.config, getattr(args, "question", None))
+    return run_command(
+        command,
+        args.config,
+        getattr(args, "question", None),
+        record=getattr(args, "record", False),
+    )
 
 
 def _add_command(

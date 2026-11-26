@@ -20,6 +20,7 @@ from hangar.observability.logs import (
     log_context,
     new_run_id,
 )
+from hangar.pipelines.ask import run_ask
 from hangar.pipelines.chunk import run_chunk
 from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.doctor import run_checks
@@ -33,7 +34,13 @@ from hangar.pipelines.settings import Settings, load_settings
 logger = logging.getLogger(__name__)
 
 
-def run_command(command: str, config_path: Path, question: str | None = None) -> int:
+def run_command(
+    command: str,
+    config_path: Path,
+    question: str | None = None,
+    *,
+    record: bool = False,
+) -> int:
     """
     Run one ``hangar`` subcommand as a logged run.
 
@@ -50,6 +57,7 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
         config_path: The pipeline file to read.
         question: The question, for the commands that take one, such as
             ``search``.
+        record: For ``ask``, whether to write the answer record too.
 
     Returns:
         The exit code: 0 on success, 1 on failure.
@@ -79,7 +87,7 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
             logger.info("run ID %s, logging to %s", run_id, log_file)
             logger.info("read %s, config hash %s", config_path, config_digest)
             started = time.monotonic()
-            exit_code = _run(command, settings, config, question)
+            exit_code = _run(command, settings, config, question, run_id, record)
 
             if exit_code == 0:
                 logger.info(
@@ -98,7 +106,12 @@ def run_command(command: str, config_path: Path, question: str | None = None) ->
 
 
 def _run(
-    command: str, settings: Settings, config: PipelineConfig, question: str | None
+    command: str,
+    settings: Settings,
+    config: PipelineConfig,
+    question: str | None,
+    run_id: str,
+    record: bool,
 ) -> int:
     if command == "doctor":
         return _doctor(settings, config)
@@ -131,6 +144,9 @@ def _run(
     if command == "search":
         return _search(settings, config, question)
 
+    if command == "ask":
+        return _ask(settings, config, question, run_id, record)
+
     logger.error("hangar %s is not built yet", command)
 
     return 1
@@ -159,12 +175,9 @@ def _doctor(settings: Settings, config: PipelineConfig) -> int:
 
 
 def _search(settings: Settings, config: PipelineConfig, question: str | None) -> int:
-    if question is None or not question.strip():
-        logger.error(
-            "hangar search needs a question, such as: "
-            "hangar search 'What is a maintenance release?'"
-        )
+    question = _given_question("search", question)
 
+    if question is None:
         return 1
 
     results = run_search(settings, config, question)
@@ -173,3 +186,35 @@ def _search(settings: Settings, config: PipelineConfig, question: str | None) ->
     print(format_results(results))
 
     return 0
+
+
+def _ask(
+    settings: Settings,
+    config: PipelineConfig,
+    question: str | None,
+    run_id: str,
+    record: bool,
+) -> int:
+    question = _given_question("ask", question)
+
+    if question is None:
+        return 1
+
+    # Like search results, the answer goes to standard output.
+    print(run_ask(settings, config, question, run_id, record=record))
+
+    return 0
+
+
+def _given_question(command: str, question: str | None) -> str | None:
+    if question is not None and question.strip():
+        return question
+
+    logger.error(
+        "hangar %s needs a question, such as: "
+        "hangar %s 'What is a maintenance release?'",
+        command,
+        command,
+    )
+
+    return None
