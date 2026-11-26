@@ -9,14 +9,12 @@ from hangar.core.chunks import Chunk
 from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.vectors import VectorsMeta
 from hangar.embedding.embedder import EmbedError, HashEmbedder
-from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.embed import run_embed
-from hangar.pipelines.settings import Settings, load_settings
+from hangar.pipelines.settings import Settings
 from hangar.pipelines.vector_file import read_vectors
 from tests.builders import chunk, consecutive_chunks
+from tests.fixture_corpus import FixtureCorpus
 
-ROOT = Path(__file__).resolve().parents[3]
-V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
 TEXTS = ["one two three ", "four five", "six seven"]
 
 
@@ -29,7 +27,7 @@ def vectors_folder(tmp_path: Path) -> Path:
 
 
 def setup(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, chunks: list[Chunk] | None = None
+    tmp_path: Path, fixture_corpus: FixtureCorpus, chunks: list[Chunk] | None = None
 ) -> tuple[Settings, PipelineConfig]:
     """Write a chunks file, and point the settings at it."""
     if chunks is None:
@@ -39,9 +37,8 @@ def setup(
     folder.mkdir(parents=True)
     lines = "\n".join(c.model_dump_json() for c in chunks)
     (folder / "chunks.jsonl").write_text(lines + "\n")
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
 
-    return load_settings(None), load_pipeline_config(V0_CONFIG)
+    return fixture_corpus.settings(), fixture_corpus.config()
 
 
 class DropsTheLastVector(HashEmbedder):
@@ -55,9 +52,9 @@ class ReportsTheWrongDimension(HashEmbedder):
 
 
 def test_each_chunk_gets_its_vector_in_chunk_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     embedder = HashEmbedder(dimension=8)
 
     run_embed(settings, config, embedder=embedder)
@@ -73,9 +70,9 @@ def test_each_chunk_gets_its_vector_in_chunk_order(
 
 
 def test_meta_records_the_input_the_embedder_and_the_count(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     chunks_file = chunks_folder(tmp_path) / "chunks.jsonl"
 
     returned = run_embed(settings, config, embedder=HashEmbedder(dimension=8))
@@ -100,9 +97,9 @@ def test_meta_records_the_input_the_embedder_and_the_count(
 
 
 def test_a_second_run_writes_the_same_files(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     folder = vectors_folder(tmp_path)
     names = ("vectors.parquet", "meta.json")
 
@@ -114,29 +111,28 @@ def test_a_second_run_writes_the_same_files(
 
 
 def test_a_missing_chunks_file_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
-    config = load_pipeline_config(V0_CONFIG)
+    settings, config = fixture_corpus.settings(), fixture_corpus.config()
 
     with pytest.raises(EmbedError, match="run hangar chunk first"):
-        run_embed(load_settings(None), config, embedder=HashEmbedder())
+        run_embed(settings, config, embedder=HashEmbedder())
 
 
 def test_a_chunk_listed_twice_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
     twice = chunk("one two three ")
-    settings, config = setup(tmp_path, monkeypatch, chunks=[twice, twice])
+    settings, config = setup(tmp_path, fixture_corpus, chunks=[twice, twice])
 
     with pytest.raises(ChunkError, match=f"^{twice.id}: .*more than once"):
         run_embed(settings, config, embedder=HashEmbedder())
 
 
 def test_a_missing_vector_stops_the_run_and_writes_nothing(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
 
     with pytest.raises(EmbedError, match="2 vectors for 3 chunks"):
         run_embed(settings, config, embedder=DropsTheLastVector())
@@ -145,9 +141,9 @@ def test_a_missing_vector_stops_the_run_and_writes_nothing(
 
 
 def test_a_vector_of_the_wrong_dimension_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
 
     with pytest.raises(EmbedError, match="7 values, not 8"):
         run_embed(settings, config, embedder=ReportsTheWrongDimension(dimension=8))
