@@ -405,4 +405,23 @@ The attribution follows each source's terms in [`NOTICE.md`](../NOTICE.md), as [
 
 ### Evaluate
 
-To be written in #30 to #33.
+The seed set is 50 questions written by hand in `eval/seed/questions.jsonl`, one JSON record per line, committed before Hangar answers any of them (#30). The rest of this section arrives with #31 to #33.
+
+**The question record** (`core.questions.QuestionRecord`) holds the fields of #30: `id` (`q-0001` to `q-0050`), `question`, `type`, `authority` (`FAA`, `TC`, `both`, or `none` for an unanswerable question), `expected` (`answer`, `abstain`, or `ask_authority` to ask which authority applies), `evidence`, `reference_answer` (a list of key facts), `origin` (`human`), `author`, `created` (a date such as `2026-11-27`) and `notes`. Each evidence item holds:
+
+- `document_id`: a document of the snapshot, such as `faa-h-8083-30b`.
+- `location`: the end of the passage ID. `p42` is the PDF page at index 42, its position in the file, not its printed label; `s571.03` is a section; `front` is the text before a page's first numbered section.
+- `quote`: one or two sentences, at most 500 characters, copied from the parsed text.
+- `grade`: 2 when the quote answers the question, 1 when it helps.
+
+Only an unanswerable question expects `abstain`, and only it may have authority `none` or no evidence. Every other question needs at least one grade-2 item.
+
+**Writing the questions.** Three tools help:
+
+1. **Find the passage and copy the quote** with `uv run hangar passage <document> [<location>]`. Without a location, it lists the document's locations, each with its printed page label or its heading, so `p42  printed label 1-21` gives the location of printed page 1-21. With a location, it prints the parsed text and an `evidence:` line to paste into the record. Copy quotes from this output, not from the PDF or the web page: the parsed text is normalised (NFKC, see ADR-0005), so a few characters can differ from the source.
+2. **Check the file** with `uv run pytest tests/unit/test_seed_questions.py`. It lists every problem, each with its question and line: invalid fields, duplicate or missing IDs, documents outside the snapshot, and the counts of the mix that are off target (8 lookup, 8 table, 7 procedure, 5 explanation, 8 regulatory, 5 identifier, 4 multi-part, 5 unanswerable; 27 to 33 FAA and 12 to 18 TC). CI runs it once the file exists.
+3. **Check the quotes** with `uv run pytest -m corpus tests/corpus/test_seed_quotes.py`, after `hangar parse`. It lists every quote that isn't in the passage at its location.
+
+Both tests read a draft kept elsewhere when `SEED_QUESTIONS` names it: `SEED_QUESTIONS=~/draft.jsonl uv run pytest tests/unit/test_seed_questions.py`.
+
+**The whitespace rule.** Parsing keeps the documents' line breaks, and a quote sits on one line of JSON. So when a quote is matched, every run of spaces, tabs and line breaks counts as one space, in the quote and in the passage, and spaces at the ends of the quote are ignored. Nothing else may differ: case, punctuation, hyphens and every other character must be those of the parsed text. Transport Canada text is never changed beyond this.

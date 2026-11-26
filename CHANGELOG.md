@@ -8,6 +8,8 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 Added:
 
+- The tools for writing the seed questions: the question record model, pulled forward from #31; a check of `eval/seed/questions.jsonl` that lists every problem by question, the mix counts included; a corpus test that finds each evidence quote word for word in its passage; and `hangar passage`, which prints the parsed text of a page or section to copy quotes from (#89).
+
 ### 0.0.0a4 · M4 Answering (2026-11-26)
 
 The answering path: `hangar ask` retrieves the top 5 chunks, renders the v0 prompt, asks Mistral Small 4 and prints an answer whose numbered citations name a document and its pages or sections, ending with the study-aid notice. `--record` writes the answer and run records with their cost.
