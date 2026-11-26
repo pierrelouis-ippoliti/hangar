@@ -20,5 +20,4 @@ Closes #
 
 - [ ] Linked to its issue, and limited to that issue's scope
 - [ ] Tests written first for any change in behaviour
-- [ ] CI passes
 - [ ] Docs, CHANGELOG or backlog updated where needed
