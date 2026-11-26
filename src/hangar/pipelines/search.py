@@ -44,7 +44,7 @@ def run_search(
             missing or holds vectors of another dimension.
     """
     if retriever is None:
-        retriever = _configured_retriever(settings, config)
+        retriever = configured_retriever(settings, config)
 
     results = retriever.retrieve(question)
     logger.info(
@@ -90,7 +90,23 @@ def format_results(results: Sequence[ScoredChunk]) -> str:
     return "\n\n".join(blocks)
 
 
-def _configured_retriever(settings: Settings, config: PipelineConfig) -> Retriever:
+def configured_retriever(settings: Settings, config: PipelineConfig) -> Retriever:
+    """
+    Build the configured retriever over the configured collection.
+
+    Args:
+        settings: Where Hangar runs: the Qdrant server and the device the
+            embedding model runs on.
+        config: The pipeline configuration: the collection's snapshot,
+            chunker and embedder, and the retriever with its top k.
+
+    Returns:
+        The retriever, with its embedding model loaded.
+
+    Raises:
+        VectorIndexError: If Qdrant can't be reached, or the collection is
+            missing or holds vectors of another dimension.
+    """
     snapshot = config.corpus.snapshot
     name = collection_name(
         snapshot, chunker_id(config.chunking), embedder_id(config.embedding)

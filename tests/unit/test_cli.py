@@ -26,7 +26,6 @@ SETTING_NAMES = [
 ]
 FAKE_KEY = "fake-mistral-key-0123456789"
 STAGE_COMMANDS = [
-    ["ask"],
     ["seed", "run"],
     ["seed", "summarize"],
 ]
@@ -368,3 +367,45 @@ def test_search_refuses_a_blank_question_before_loading_anything(
     assert {r["stage"] for r in records} == {"search"}
     assert records[-1]["level"] == "ERROR"
     assert "needs a question" in records[-1]["message"]
+
+
+def test_ask_needs_a_question_on_the_command_line() -> None:
+    with pytest.raises(SystemExit) as exit_info:
+        main(["ask", "--config", str(V0_CONFIG)])
+
+    assert exit_info.value.code == 2
+
+
+def test_ask_refuses_a_blank_question_before_loading_anything(
+    workspace: Path,
+) -> None:
+    assert main(["ask", "  ", "--config", str(V0_CONFIG)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"ask"}
+    assert records[-1]["level"] == "ERROR"
+    assert "needs a question" in records[-1]["message"]
+
+
+@pytest.mark.parametrize("record", [False, True], ids=["screen", "record"])
+def test_ask_prints_the_answer_of_a_run_that_shares_its_log_file_run_id(
+    record: bool,
+    monkeypatch: pytest.MonkeyPatch,
+    workspace: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    calls: list[dict[str, Any]] = []
+
+    def fake_run_ask(*args: Any, **kwargs: Any) -> str:
+        calls.append({"question": args[2], "run_id": args[3], **kwargs})
+
+        return "The answer [1]."
+
+    monkeypatch.setattr("hangar.pipelines.commands.run_ask", fake_run_ask)
+    options = ["--record"] if record else []
+
+    assert main(["ask", "Why?", "--config", str(V0_CONFIG), *options]) == 0
+
+    (log_file,) = run_logs(workspace)
+    assert calls == [{"question": "Why?", "run_id": log_file.stem, "record": record}]
+    assert capsys.readouterr().out == "The answer [1].\n"
