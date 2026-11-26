@@ -11,11 +11,17 @@ evidence is matched by quote.
 """
 
 import datetime
+import json
+import re
+from collections import Counter
+from collections.abc import Collection, Sequence
+from dataclasses import dataclass
 from typing import Literal, Self
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from hangar.core.corpus import DOCUMENT_ID_PATTERN
+from hangar.core.errors import field_problems
 
 QUESTION_ID_PATTERN = r"^q-[0-9]{4}$"
 
@@ -41,6 +47,23 @@ QuestionAuthority = Literal["FAA", "TC", "both", "none"]
 # ``ask_authority``: Hangar should ask whether the FAA or Transport Canada
 # applies.
 ExpectedBehaviour = Literal["answer", "abstain", "ask_authority"]
+
+# The target mix of the seed set (#30): 50 questions in all.
+TYPE_TARGETS: dict[QuestionType, int] = {
+    "lookup": 8,
+    "table": 8,
+    "procedure": 7,
+    "explanation": 5,
+    "regulatory": 8,
+    "identifier": 5,
+    "multi-part": 4,
+    "unanswerable": 5,
+}
+SEED_SET_SIZE = sum(TYPE_TARGETS.values())
+# "About 30 on FAA material and 15 on Transport Canada material": a count
+# within this many questions of its target is on target.
+AUTHORITY_TARGETS: dict[QuestionAuthority, int] = {"FAA": 30, "TC": 15}
+AUTHORITY_TOLERANCE = 3
 
 
 class QuestionModel(BaseModel):
@@ -151,3 +174,171 @@ class QuestionRecord(QuestionModel):
                 "at least one evidence item needs grade 2, a quote that "
                 "answers the question"
             )
+
+
+@dataclass(frozen=True)
+class _Reading:
+    """
+    What reading a questions file found, with line numbers for the problems.
+
+    Attributes:
+        ids: The line number and ID of every line that holds an ID, valid
+            or not.
+        records: The line number and record of every valid line.
+        problems: The problems of the lines that aren't valid.
+    """
+
+    ids: list[tuple[int, str]]
+    records: list[tuple[int, QuestionRecord]]
+    problems: list[str]
+
+
+def read_questions(text: str) -> tuple[list[QuestionRecord], list[str]]:
+    """
+    Read the lines of a questions file, keeping every valid record.
+
+    Each non-blank line is one JSON record. A line that isn't valid gives
+    one problem per failed check instead of stopping the reading.
+
+    Args:
+        text: The content of the file, such as ``eval/seed/questions.jsonl``.
+
+    Returns:
+        The valid records in file order, and the problems of the other
+        lines. Each problem starts with the question ID and line number,
+        such as ``q-0003 (line 3): evidence[0].grade: ...``, or with only the
+        line number when the line has no ID.
+    """
+    reading = _read(text)
+
+    return [record for _, record in reading.records], reading.problems
+
+
+def check_questions(text: str, document_ids: Collection[str]) -> list[str]:
+    """
+    Check a questions file as a seed set, listing every problem found.
+
+    On top of each record's own checks, the IDs must be unique and run from
+    ``q-0001`` with no gap, evidence must point to documents of the
+    snapshot, and the set must follow the target mix. The mix problems give
+    the counts, so they show the progress of a set still being written.
+
+    Args:
+        text: The content of the file, such as ``eval/seed/questions.jsonl``.
+        document_ids: The IDs of the documents in the snapshot.
+
+    Returns:
+        Every problem, in plain words, each naming its question when it has
+        one; mix problems start with ``mix:``. An empty list means the set
+        is ready.
+    """
+    reading = _read(text)
+    records = [record for _, record in reading.records]
+
+    return [
+        *reading.problems,
+        *_id_problems(reading.ids),
+        *_document_problems(reading.records, document_ids),
+        *_mix_problems(records),
+    ]
+
+
+def _read(text: str) -> _Reading:
+    reading = _Reading(ids=[], records=[], problems=[])
+
+    for number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+
+        try:
+            data = json.loads(line)
+        except json.JSONDecodeError as error:
+            reading.problems.append(f"line {number}: not valid JSON ({error.msg})")
+            continue
+
+        question_id = data.get("id") if isinstance(data, dict) else None
+
+        if isinstance(question_id, str) and question_id:
+            reading.ids.append((number, question_id))
+            name = f"{question_id} (line {number})"
+        else:
+            name = f"line {number}"
+
+        try:
+            reading.records.append((number, QuestionRecord.model_validate(data)))
+        except ValidationError as error:
+            reading.problems.extend(
+                f"{name}: {p.field}: {p.message}" if p.field else f"{name}: {p.message}"
+                for p in field_problems(error)
+            )
+
+    return reading
+
+
+def _id_problems(ids: Sequence[tuple[int, str]]) -> list[str]:
+    problems = []
+    first_line: dict[str, int] = {}
+
+    for number, question_id in ids:
+        if question_id in first_line:
+            problems.append(
+                f"{question_id} (line {number}): the ID is already used "
+                f"on line {first_line[question_id]}"
+            )
+        else:
+            first_line[question_id] = number
+
+    numbers = {
+        int(question_id.removeprefix("q-"))
+        for question_id in first_line
+        if re.fullmatch(QUESTION_ID_PATTERN, question_id)
+    }
+
+    if numbers:
+        last = max(numbers)
+        problems.extend(
+            f"q-{n:04d}: missing; the IDs run from q-0001 to q-{last:04d}"
+            for n in range(1, last + 1)
+            if n not in numbers
+        )
+
+    return problems
+
+
+def _document_problems(
+    records: Sequence[tuple[int, QuestionRecord]], document_ids: Collection[str]
+) -> list[str]:
+    return [
+        f"{record.id} (line {number}): evidence[{position}].document_id: "
+        f"{item.document_id} is not a document of the snapshot"
+        for number, record in records
+        for position, item in enumerate(record.evidence)
+        if item.document_id not in document_ids
+    ]
+
+
+def _mix_problems(records: Sequence[QuestionRecord]) -> list[str]:
+    problems = []
+
+    if len(records) != SEED_SET_SIZE:
+        problems.append(f"mix: {len(records)} questions, the target is {SEED_SET_SIZE}")
+
+    types = Counter(record.type for record in records)
+    problems.extend(
+        f"mix: {types[kind]} {kind} questions, the target is {target}"
+        for kind, target in TYPE_TARGETS.items()
+        if types[kind] != target
+    )
+
+    authorities = Counter(record.authority for record in records)
+
+    for authority, target in AUTHORITY_TARGETS.items():
+        low, high = target - AUTHORITY_TOLERANCE, target + AUTHORITY_TOLERANCE
+
+        if not low <= authorities[authority] <= high:
+            problems.append(
+                f"mix: {authorities[authority]} {authority} questions, "
+                f"the target is about {target} ({low} to {high})"
+            )
+
+    return problems

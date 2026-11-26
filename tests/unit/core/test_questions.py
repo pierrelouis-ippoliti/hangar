@@ -1,10 +1,16 @@
 import datetime
+import json
 from typing import Any
 
 import pydantic
 import pytest
 
-from hangar.core.questions import Evidence, QuestionRecord
+from hangar.core.questions import (
+    Evidence,
+    QuestionRecord,
+    check_questions,
+    read_questions,
+)
 
 # Every record here is made up: the seed questions are written by hand.
 
@@ -154,3 +160,153 @@ def test_records_cannot_be_changed() -> None:
 
     with pytest.raises(pydantic.ValidationError):
         question.type = "table"  # type: ignore[misc]
+
+
+# The validator reads the whole file and lists every problem.
+
+DOCUMENT_IDS = {"example-handbook", "example-ac"}
+
+
+def jsonl(*records: dict[str, Any]) -> str:
+    return "\n".join(json.dumps(r) for r in records) + "\n"
+
+
+def numbered(count: int, **changes: Any) -> list[dict[str, Any]]:
+    return [record(id=f"q-{n:04d}", **changes) for n in range(1, count + 1)]
+
+
+def full_mix() -> list[dict[str, Any]]:
+    kinds = (
+        [("lookup", "FAA")] * 8
+        + [("table", "FAA")] * 8
+        + [("procedure", "FAA")] * 7
+        + [("explanation", "FAA")] * 5
+        + [("regulatory", "TC")] * 8
+        + [("identifier", "TC")] * 5
+        + [("multi-part", "FAA")] * 2
+        + [("multi-part", "TC")] * 2
+        + [("unanswerable", "none")] * 5
+    )
+    records = []
+
+    for n, (kind, authority) in enumerate(kinds, start=1):
+        changes: dict[str, Any] = {"type": kind, "authority": authority}
+
+        if kind == "unanswerable":
+            changes.update(expected="abstain", evidence=[])
+
+        records.append(record(id=f"q-{n:04d}", **changes))
+
+    return records
+
+
+def mix_problems(problems: list[str]) -> list[str]:
+    return [p for p in problems if p.startswith("mix: ")]
+
+
+def test_read_questions_gives_the_valid_records() -> None:
+    questions, problems = read_questions(jsonl(*numbered(2)))
+
+    assert [q.id for q in questions] == ["q-0001", "q-0002"]
+    assert problems == []
+
+
+def test_read_questions_skips_blank_lines() -> None:
+    questions, problems = read_questions("\n" + jsonl(record()) + "\n\n")
+
+    assert len(questions) == 1
+    assert problems == []
+
+
+def test_read_questions_names_the_question_and_field_of_each_problem() -> None:
+    text = jsonl(
+        record(id="q-0001", type="trivia"),
+        record(id="q-0002"),
+        record(id="q-0003", evidence=[evidence(grade=5)]),
+    )
+
+    questions, problems = read_questions(text)
+
+    assert [q.id for q in questions] == ["q-0002"]
+    assert len(problems) == 2
+    assert problems[0].startswith("q-0001 (line 1): type: ")
+    assert problems[1].startswith("q-0003 (line 3): evidence[0].grade: ")
+
+
+def test_read_questions_names_the_line_when_there_is_no_id() -> None:
+    fields = record()
+    del fields["id"]
+
+    _, problems = read_questions("{not json\n" + jsonl(fields) + "[1, 2]\n")
+
+    assert problems[0].startswith("line 1: not valid JSON")
+    assert problems[1] == "line 2: id: Field required"
+    assert problems[2].startswith("line 3: ")
+
+
+def test_a_full_valid_set_has_no_problems() -> None:
+    assert check_questions(jsonl(*full_mix()), DOCUMENT_IDS) == []
+
+
+def test_duplicate_and_missing_ids_are_reported() -> None:
+    records = numbered(4)
+    records[2]["id"] = "q-0002"
+
+    problems = check_questions(jsonl(*records), DOCUMENT_IDS)
+
+    assert "q-0002 (line 3): the ID is already used on line 2" in problems
+    assert "q-0003: missing; the IDs run from q-0001 to q-0004" in problems
+
+
+def test_document_ids_outside_the_snapshot_are_reported() -> None:
+    records = numbered(1, evidence=[evidence(), evidence(document_id="other-doc")])
+
+    problems = check_questions(jsonl(*records), DOCUMENT_IDS)
+
+    assert (
+        "q-0001 (line 1): evidence[1].document_id: other-doc is not a document "
+        "of the snapshot" in problems
+    )
+
+
+def test_the_mix_reports_the_count_of_each_type_off_target() -> None:
+    problems = check_questions(jsonl(*numbered(3)), DOCUMENT_IDS)
+
+    assert mix_problems(problems) == [
+        "mix: 3 questions, the target is 50",
+        "mix: 3 lookup questions, the target is 8",
+        "mix: 0 table questions, the target is 8",
+        "mix: 0 procedure questions, the target is 7",
+        "mix: 0 explanation questions, the target is 5",
+        "mix: 0 regulatory questions, the target is 8",
+        "mix: 0 identifier questions, the target is 5",
+        "mix: 0 multi-part questions, the target is 4",
+        "mix: 0 unanswerable questions, the target is 5",
+        "mix: 3 FAA questions, the target is about 30 (27 to 33)",
+        "mix: 0 TC questions, the target is about 15 (12 to 18)",
+    ]
+
+
+def test_the_authority_mix_allows_a_few_questions_either_way() -> None:
+    records = full_mix()
+
+    # 28 FAA and 14 TC: three questions moved to both.
+    for position in (0, 1, 30):
+        records[position]["authority"] = "both"
+
+    assert check_questions(jsonl(*records), DOCUMENT_IDS) == []
+
+
+def test_every_problem_is_reported_at_once() -> None:
+    records = full_mix()
+    records[0]["question"] = ""
+    records[1]["evidence"] = [evidence(document_id="other-doc")]
+
+    problems = check_questions(jsonl(*records), DOCUMENT_IDS)
+
+    assert problems[0].startswith("q-0001 (line 1): question: ")
+    assert problems[1].startswith("q-0002 (line 2): evidence[0].document_id: ")
+    assert mix_problems(problems) == [
+        "mix: 49 questions, the target is 50",
+        "mix: 7 lookup questions, the target is 8",
+    ]
