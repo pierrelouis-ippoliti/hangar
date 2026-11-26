@@ -115,6 +115,7 @@ class AnswerPipeline:
             scored_chunks=tuple(ScoredChunkRef.of(result) for result in results),
             prompt_version=prompt.prompt_version,
             completion=completion,
+            finish_reason=completion.finish_reason,
             citations=citations,
             timings=StageTimings(
                 retrieval_seconds=retrieved - started,

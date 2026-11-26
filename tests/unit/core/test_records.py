@@ -33,11 +33,17 @@ def test_an_answer_record_holds_every_field_of_the_issue() -> None:
         "scored_chunks",
         "prompt_version",
         "completion",
+        "finish_reason",
         "citations",
         "timings",
         "cost",
     }
     assert set(written["timings"]) == {"retrieval_seconds", "generation_seconds"}
+
+
+def test_an_answer_record_must_keep_the_finish_reason_of_its_completion() -> None:
+    with pytest.raises(ValidationError, match="finish reason"):
+        answer_record(finish_reason="length")
 
 
 def test_an_answer_record_keeps_no_chunk_text() -> None:
