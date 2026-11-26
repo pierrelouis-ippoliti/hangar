@@ -237,6 +237,30 @@ class ParsedDocument(ParsedModel):
                 f"is at {len(self.text)}"
             )
 
+    def passage(self, passage_id: str) -> Passage | None:
+        """
+        Find a passage by its ID.
+
+        Args:
+            passage_id: The ID, such as ``faa-h-8083-31b#p142``.
+
+        Returns:
+            The passage, or None if the document has no passage with this ID.
+        """
+        return next((p for p in self.passages if p.id == passage_id), None)
+
+    def passage_text(self, passage: Passage) -> str:
+        """
+        Give the part of the canonical text that a passage covers.
+
+        Args:
+            passage: A passage of this document.
+
+        Returns:
+            The text from the passage's start to its end.
+        """
+        return self.text[passage.start : passage.end]
+
     def passages_in_range(self, start: int, end: int) -> tuple[Passage, ...]:
         """
         List the passages that a range of the text covers, even in part.

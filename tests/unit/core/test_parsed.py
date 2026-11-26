@@ -178,6 +178,19 @@ def test_range_outside_the_text_is_refused() -> None:
             parsed.passages_in_range(start, end)
 
 
+def test_passage_finds_a_passage_by_its_id() -> None:
+    parsed = document()
+
+    assert parsed.passage("example-handbook#p2") == page(2, 12, 25)
+    assert parsed.passage("example-handbook#p9") is None
+
+
+def test_passage_text_is_the_range_of_the_canonical_text() -> None:
+    parsed = document()
+
+    assert parsed.passage_text(page(2, 12, 25)) == "second page\n\n"
+
+
 def test_document_survives_a_json_round_trip() -> None:
     section = SectionLocation(label="571.10", heading_path=("Part V", "Subpart 71"))
     parsed = document(

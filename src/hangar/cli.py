@@ -18,6 +18,7 @@ COMMANDS = {
     "index": "load the vectors into Qdrant",
     "search": "find the passages for a question, without the language model",
     "ask": "answer a question from the documents, with citations",
+    "passage": "print the parsed text of a page or section, to copy quotes",
 }
 
 # The commands that take a question as their first argument.
@@ -36,7 +37,8 @@ def build_parser() -> argparse.ArgumentParser:
     Returns:
         A parser with `--version` and one subcommand per pipeline stage.
         Every subcommand takes `--config`; `search` and `ask` also take a
-        question, and `ask` takes `--record`.
+        question, and `ask` takes `--record`. `passage` takes a document ID
+        and an optional location.
     """
     parser = argparse.ArgumentParser(
         prog="hangar",
@@ -63,6 +65,9 @@ def build_parser() -> argparse.ArgumentParser:
                 action="store_true",
                 help="also write the answer record to <data folder>/runs/<run ID>/",
             )
+
+        if name == "passage":
+            _add_passage_arguments(command)
 
     seed = commands.add_parser("seed", help="run or summarize the seed questions")
 
@@ -99,6 +104,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.config,
         getattr(args, "question", None),
         record=getattr(args, "record", False),
+        document=getattr(args, "document", None),
+        location=getattr(args, "location", None),
     )
 
 
@@ -117,3 +124,13 @@ def _add_command(
     )
 
     return command
+
+
+def _add_passage_arguments(command: argparse.ArgumentParser) -> None:
+    command.add_argument("document", help="the document ID, such as tc-std-571")
+    command.add_argument(
+        "location",
+        nargs="?",
+        help="p142 (a PDF page index), s571.10 (a section) or front; "
+        "without it, the document's locations are listed",
+    )

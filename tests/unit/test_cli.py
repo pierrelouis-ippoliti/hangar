@@ -390,3 +390,39 @@ def test_ask_prints_the_answer_of_a_run_that_shares_its_log_file_run_id(
     (log_file,) = run_logs(workspace)
     assert calls == [{"question": "Why?", "run_id": log_file.stem, "record": record}]
     assert capsys.readouterr().out == "The answer [1].\n"
+
+
+def test_passage_prints_one_page_of_a_parsed_document(
+    workspace: Path, fixture_corpus: FixtureCorpus, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture_corpus.copy_raw()
+    config = str(fixture_corpus.write_config())
+    assert main(["parse", "--config", config]) == 0
+    capsys.readouterr()
+
+    assert main(["passage", "example-handbook", "p2", "--config", config]) == 0
+
+    out = capsys.readouterr().out
+    assert out.startswith("passage:  example-handbook#p2\n")
+    assert "Immediately after the engine starts" in out
+
+
+def test_passage_without_a_location_lists_the_locations(
+    workspace: Path, fixture_corpus: FixtureCorpus, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fixture_corpus.copy_raw()
+    config = str(fixture_corpus.write_config())
+    assert main(["parse", "--config", config]) == 0
+    capsys.readouterr()
+
+    assert main(["passage", "example-handbook", "--config", config]) == 0
+
+    assert capsys.readouterr().out.splitlines()[0] == "p1  printed label 1-13"
+
+
+def test_passage_stops_when_the_document_is_not_parsed(workspace: Path) -> None:
+    assert main(["passage", "faa-h-8083-30b", "p1", "--config", str(V0_CONFIG)]) == 1
+
+    records = log_records(workspace)
+    assert {r["stage"] for r in records} == {"passage"}
+    assert "run hangar parse first" in records[-1]["message"]

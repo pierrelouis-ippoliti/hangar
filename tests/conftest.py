@@ -1,4 +1,5 @@
 import ipaddress
+import os
 import socket
 import threading
 from collections.abc import Iterator
@@ -109,6 +110,30 @@ def fake_qdrant() -> Iterator[FakeQdrant]:
     yield fake
     server.shutdown()
     server.server_close()
+
+
+SEED_QUESTIONS = (
+    Path(__file__).resolve().parents[1] / "eval" / "seed" / "questions.jsonl"
+)
+
+
+@pytest.fixture
+def seed_questions() -> Path:
+    """
+    The seed questions file, or a skip while it doesn't exist.
+
+    ``SEED_QUESTIONS`` points to another file instead, such as a draft kept
+    outside the repository.
+    """
+    path = Path(os.environ.get("SEED_QUESTIONS", SEED_QUESTIONS))
+
+    if not path.is_file():
+        pytest.skip(
+            f"{path} doesn't exist yet; the maintainer writes the seed questions "
+            "by hand (#30)"
+        )
+
+    return path
 
 
 @pytest.fixture
