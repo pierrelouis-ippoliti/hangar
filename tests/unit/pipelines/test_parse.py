@@ -1,82 +1,30 @@
-import hashlib
-import shutil
 from pathlib import Path
 from typing import Any
 
 import pytest
-import yaml
 
 from hangar.core.config import PipelineConfig, config_hash
 from hangar.core.parsed import ParsedFile
 from hangar.parsing.parser import ParseError
 from hangar.parsing.report import ParseCheckError, ParseReport
-from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.parse import run_parse
-from hangar.pipelines.settings import Settings, load_settings
-
-ROOT = Path(__file__).resolve().parents[3]
-FIXTURES = ROOT / "tests" / "fixtures"
-V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
-
-# Each test document: its ID, fixture, format and type.
-DOCUMENTS = [
-    ("example-handbook", "pdf/faa-h-8083-30b-p34-36.pdf", "pdf", "handbook"),
-    ("example-regulation", "car/car-example.xml", "xml", "regulation"),
-    ("example-ac", "tc_html/tc-ac-example.html", "html", "advisory_circular"),
-]
-
-
-def entry(document_id: str, fixture: str, fmt: str, kind: str) -> dict[str, Any]:
-    return {
-        "id": document_id,
-        "title": "Example",
-        "authority": "FAA" if fmt == "pdf" else "TC",
-        "type": kind,
-        "language": "en",
-        "source_url": f"https://example.org/{document_id}",
-        "official_url": f"https://example.org/{document_id}",
-        "format": fmt,
-        "edition": "1",
-        "content_date": "2024-01-01",
-        "page_modified_date": "2024-01-01",
-        "retrieved_on": "2026-11-04",
-        "status": "active",
-        "sha256": hashlib.sha256((FIXTURES / fixture).read_bytes()).hexdigest(),
-        "reuse_note": "Made up for tests.",
-    }
+from hangar.pipelines.settings import Settings
+from tests.fixture_corpus import FixtureCorpus
 
 
 def setup(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, **checks: Any
+    fixture_corpus: FixtureCorpus, **checks: Any
 ) -> tuple[Settings, PipelineConfig]:
-    """Copy the fixtures into a raw folder, with a manifest and a config."""
-    raw = tmp_path / "data" / "raw"
-    raw.mkdir(parents=True)
+    """Copy the fixture corpus into the raw folder, and load its config."""
+    fixture_corpus.copy_raw()
 
-    for document_id, fixture, fmt, _ in DOCUMENTS:
-        shutil.copy(FIXTURES / fixture, raw / f"{document_id}.{fmt}")
-
-    manifest = tmp_path / "manifest.yaml"
-    documents = [entry(*document) for document in DOCUMENTS]
-    manifest.write_text(yaml.safe_dump({"snapshot": "c1", "documents": documents}))
-
-    data = yaml.safe_load(V0_CONFIG.read_text())
-    data["corpus"]["manifest"] = str(manifest)
-    # The fixtures are much shorter than real documents.
-    data["parsing"]["checks"]["min_characters"] = 100
-    data["parsing"]["checks"].update(checks)
-    config_path = tmp_path / "pipeline.yaml"
-    config_path.write_text(yaml.safe_dump(data))
-
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
-
-    return load_settings(None), load_pipeline_config(config_path)
+    return fixture_corpus.settings(), fixture_corpus.config(**checks)
 
 
 def test_every_document_is_parsed_into_the_snapshot_folder(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(fixture_corpus)
 
     run_parse(settings, config, results_dir=tmp_path / "results")
 
@@ -94,9 +42,9 @@ def test_every_document_is_parsed_into_the_snapshot_folder(
 
 
 def test_the_report_is_written_under_the_run_name(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(fixture_corpus)
 
     returned = run_parse(settings, config, results_dir=tmp_path / "results")
 
@@ -115,9 +63,9 @@ def test_the_report_is_written_under_the_run_name(
 
 
 def test_a_second_run_gives_the_same_report_and_files(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(fixture_corpus)
     results = tmp_path / "results"
     report = results / "v0" / "parse-report.json"
     parsed = tmp_path / "data" / "parsed" / "c1" / "example-handbook.json"
@@ -130,9 +78,9 @@ def test_a_second_run_gives_the_same_report_and_files(
 
 
 def test_files_of_documents_no_longer_in_the_snapshot_are_removed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(fixture_corpus)
     folder = tmp_path / "data" / "parsed" / "c1"
     folder.mkdir(parents=True)
     (folder / "old-document.json").write_text("{}")
@@ -143,9 +91,9 @@ def test_files_of_documents_no_longer_in_the_snapshot_are_removed(
 
 
 def test_a_document_outside_the_thresholds_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch, min_characters=1500)
+    settings, config = setup(fixture_corpus, min_characters=1500)
 
     with pytest.raises(ParseCheckError) as error:
         run_parse(settings, config, results_dir=tmp_path / "results")
@@ -158,9 +106,9 @@ def test_a_document_outside_the_thresholds_stops_the_run(
 
 
 def test_a_failed_check_writes_the_report_but_no_parsed_files(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch, min_characters=1500)
+    settings, config = setup(fixture_corpus, min_characters=1500)
 
     with pytest.raises(ParseCheckError):
         run_parse(settings, config, results_dir=tmp_path / "results")
@@ -170,9 +118,9 @@ def test_a_failed_check_writes_the_report_but_no_parsed_files(
 
 
 def test_a_missing_raw_file_stops_the_run_naming_the_document(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(fixture_corpus)
     (tmp_path / "data" / "raw" / "example-regulation.xml").unlink()
 
     with pytest.raises(ParseError, match="^example-regulation: .*hangar fetch"):
