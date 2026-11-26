@@ -116,6 +116,8 @@ The language model's output can vary even at temperature 0, so every answer is s
 - **Answer record**, one per question: the run ID, the seed question's ID (none for `hangar ask`), the question, a reference to each retrieved chunk (its ID, score, document ID and pages or sections, never its text), the prompt version, the completion with its token counts, the citations (invalid ones included), the retrieval and generation times, and the cost.
 - **Run record**, one per run: the run ID, the configuration hash, the git commit and dirty flag (none outside a git checkout), whether it was a release run, the snapshot, the embedding model and its revision, the language model's dated ID, the start and end times, and the totals over its answers: the number of answers, the input and output tokens, the cost, and the retrieval and generation times.
 
+An answer cut off at the output token limit shows in its record as `completion.finish_reason` set to `length`, instead of `stop`.
+
 Answer records are committed, and the documents are never redistributed ([ADR-0003](adr/0003-licences.md)), so a record keeps where each chunk is, not what it says; the chunk ID finds the text again in the chunks file.
 
 Times are in seconds. Retrieval time includes embedding the question. Generation time is the whole language model call, waits for the rate limit and retries included, so it can be longer than the completion's latency, which counts only the request that succeeded.
