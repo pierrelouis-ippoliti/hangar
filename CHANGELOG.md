@@ -4,6 +4,10 @@ Each Hangar version has one section, with one subsection per tag. A milestone en
 
 ## v0 · Baseline (in progress)
 
+### Unreleased · M5 Seed set
+
+Added:
+
 ### 0.0.0a4 · M4 Answering (2026-11-26)
 
 The answering path: `hangar ask` retrieves the top 5 chunks, renders the v0 prompt, asks Mistral Small 4 and prints an answer whose numbered citations name a document and its pages or sections, ending with the study-aid notice. `--record` writes the answer and run records with their cost.
