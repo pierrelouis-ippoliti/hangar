@@ -113,7 +113,7 @@ The Mistral API key is replaced by `[REDACTED]` before any record is written, in
 
 The language model's output can vary even at temperature 0, so every answer is stored rather than assumed reproducible. An answering run, such as `hangar ask` or `hangar seed run`, keeps two kinds of record, both defined in `core.records`:
 
-- **Answer record**, one per question: the run ID, the seed question's ID (none for `hangar ask`), the question, a reference to each retrieved chunk (its ID, score, document ID and pages or sections, never its text), the prompt version, the completion with its token counts, the finish reason copied from the completion (`stop`, or `length` for an answer cut off at the output limit, so cut-off answers stand out in the seed run), the citations (invalid ones included), the retrieval and generation times, and the cost.
+- **Answer record**, one per question: the run ID, the seed question's ID (none for `hangar ask`), the question, a reference to each retrieved chunk (its ID, score, document ID and pages or sections, never its text), the prompt version, the completion with its token counts, the citations (invalid ones included), the retrieval and generation times, and the cost.
 - **Run record**, one per run: the run ID, the configuration hash, the git commit and dirty flag (none outside a git checkout), whether it was a release run, the snapshot, the embedding model and its revision, the language model's dated ID, the start and end times, and the totals over its answers: the number of answers, the input and output tokens, the cost, and the retrieval and generation times.
 
 Answer records are committed, and the documents are never redistributed ([ADR-0003](adr/0003-licences.md)), so a record keeps where each chunk is, not what it says; the chunk ID finds the text again in the chunks file.
@@ -365,7 +365,7 @@ Only a number in square brackets counts as a marker, as the v0 prompt asks: `[1]
 2. It renders the prompt.
 3. It asks the language model, at the configured temperature (0) and output limit (512 tokens).
 4. It parses the citations, and logs a warning that names any invalid marker.
-5. It builds the answer record: a reference to each chunk (never its text), the prompt version, the completion and its finish reason, the citations, the retrieval and generation times, and the cost, priced with `generation.model`.
+5. It builds the answer record: a reference to each chunk (never its text), the prompt version, the completion, the citations, the retrieval and generation times, and the cost, priced with `generation.model`.
 
 It lives in `pipelines` because it combines two stages, retrieval and generation, which may not import each other. `hangar seed run` will answer every seed question with it.
 

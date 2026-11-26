@@ -214,7 +214,6 @@ def answer_record(**changes: Any) -> AnswerRecord:
         "scored_chunks": (ScoredChunkRef.of(scored(retrieved)),),
         "prompt_version": "answer-v0",
         "completion": completion(),
-        "finish_reason": "stop",
         "citations": (citation(retrieved),),
         "timings": StageTimings(retrieval_seconds=0.25, generation_seconds=1.75),
         "cost": Cost(free_tier_usd=0.0, list_price_usd=0.000195),

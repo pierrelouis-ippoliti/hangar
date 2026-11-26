@@ -48,23 +48,6 @@ class RecordingLlm(FakeLlmClient):
         )
 
 
-class CutOffLlm(FakeLlmClient):
-    """The fake client, as if every answer hit the output token limit."""
-
-    def complete(
-        self,
-        messages: Sequence[Message],
-        *,
-        temperature: float,
-        max_output_tokens: int,
-    ) -> Completion:
-        completion = super().complete(
-            messages, temperature=temperature, max_output_tokens=max_output_tokens
-        )
-
-        return completion.model_copy(update={"finish_reason": "length"})
-
-
 def ticks(*seconds: float) -> Callable[[], float]:
     """A clock that gives each number of seconds in turn."""
     times = iter(seconds)
@@ -158,11 +141,3 @@ def test_the_tokens_are_priced_with_the_configured_model() -> None:
     assert record.cost.free_tier_usd == 0.0
     assert record.cost.list_price_usd == pytest.approx(expected)
     assert expected > 0
-
-
-def test_a_finished_answer_says_it_stopped() -> None:
-    assert pipeline().answer(QUESTION, RUN_ID).finish_reason == "stop"
-
-
-def test_a_cut_off_answer_can_be_told_apart() -> None:
-    assert pipeline(CutOffLlm()).answer(QUESTION, RUN_ID).finish_reason == "length"

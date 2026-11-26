@@ -107,10 +107,6 @@ class AnswerRecord(RecordModel):
         prompt_version: The prompt file used, such as ``answer-v0``.
         completion: The language model's completion, with its token
             counts.
-        finish_reason: Why the model stopped, copied from the completion:
-            ``stop`` for a finished answer, ``length`` for one cut off at
-            the output token limit. It sits at the top so a cut-off answer
-            stands out in the seed run.
         citations: The citations parsed from the answer, invalid ones
             included.
         timings: How long retrieval and generation took.
@@ -123,20 +119,9 @@ class AnswerRecord(RecordModel):
     scored_chunks: tuple[ScoredChunkRef, ...]
     prompt_version: str = Field(min_length=1)
     completion: Completion
-    finish_reason: str = Field(min_length=1)
     citations: tuple[Citation, ...]
     timings: StageTimings
     cost: Cost
-
-    @model_validator(mode="after")
-    def _check_finish_reason_matches_completion(self) -> Self:
-        if self.finish_reason != self.completion.finish_reason:
-            raise ValueError(
-                f"finish reason {self.finish_reason!r} differs from the "
-                f"completion's {self.completion.finish_reason!r}"
-            )
-
-        return self
 
 
 class ModelVersions(RecordModel):
