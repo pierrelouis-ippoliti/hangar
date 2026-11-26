@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Hangar is a RAG system over the FAA maintenance technician handbooks and Transport Canada's maintenance rules (CAR Subparts 571 and 573, Standards 571 and 573, ACs 571-xxx and 573-xxx). It is rebuilt in public, one measured version at a time (v0 to v12).
 
-**The tooling is in place (M0); the pipeline code is not yet.** `src/hangar/` holds only the `hangar` command with `--version`. A package folder (`core`, `parsing`, …) is created when its first real file arrives, never as an empty placeholder. The plan lives in the GitHub milestones and issues of `pierrelouis-ippoliti/hangar`. Each issue states its scope and acceptance criteria; read the relevant issue (`gh issue view <n>`) before starting work, and reference it in commits and pull requests. `docs/architecture.md` and `docs/adr/` record the design; fill in a stage's section of `docs/architecture.md` in the issue that builds it.
+**The pipeline code exists through M4.** The build stages, `hangar search` and `hangar ask` work; `hangar seed run` and `seed summarize` (M5) are not built yet. A package folder (`core`, `parsing`, …) is created when its first real file arrives, never as an empty placeholder. The plan lives in the GitHub milestones and issues of `pierrelouis-ippoliti/hangar`. Each issue states its scope and acceptance criteria; read the relevant issue (`gh issue view <n>`) before starting work, and reference it in commits and pull requests. `docs/architecture.md` and `docs/adr/` record the design; fill in a stage's section of `docs/architecture.md` in the issue that builds it.
 
 In public text, always pair the name with its subtitle, "Hangar - cited answers from aircraft maintenance documents", because an aviation product called HangarOS exists.
 
@@ -18,13 +18,15 @@ The stack is Python 3.12 managed with uv; ruff, mypy (strict on `src/`), import-
 
 - `make setup`: install every dependency group from `uv.lock` and the pre-commit hooks.
 - `make check`: lint, format check, types, import rules and tests. CI runs this same target, so add a new check here, not in `ci.yml`.
+- `make fix`: format the code, then apply ruff's safe fixes.
 - `make qdrant-up` / `make qdrant-down`: start and stop Qdrant through Docker Compose.
 - `make reproduce`: setup, Qdrant, then every DVC stage from a clean clone.
 - `make clean-data`: delete `data/` and the Qdrant volume (asks for confirmation).
 - Single test: `uv run pytest tests/unit/test_file.py::test_name`.
 - Tests marked `model` (real BGE-M3), `llm` (real Mistral call, needs the API key) and `corpus` (reads the downloaded documents in `data/raw`) run only locally, never in CI.
+- Tests build domain objects with `tests/builders.py` and use the fakes in `tests/fakes.py`. Extend these files rather than writing local helpers.
 
-The `hangar` CLI (built with `argparse`) will have one subcommand per stage, each taking a pipeline config (default `configs/pipelines/v0.yaml`): `doctor`, `fetch`, `parse`, `chunk`, `embed`, `index`, `search` (retrieval only, no LLM), `ask`, `seed run`, `seed summarize`. DVC stages in `dvc.yaml` mirror the build commands, so DVC reruns only what a parameter change affects.
+The `hangar` CLI (built with `argparse`) has one subcommand per stage, each taking a pipeline config (default `configs/pipelines/v0.yaml`): `doctor`, `fetch`, `parse`, `chunk`, `embed`, `index`, `search` (retrieval only, no LLM), `ask`, `seed run`, `seed summarize`. DVC stages in `dvc.yaml` mirror the build commands, so DVC reruns only what a parameter change affects.
 
 ## Architecture
 
@@ -35,7 +37,7 @@ One package, `src/hangar/`, split by stage. Dependency rules, enforced by import
 - `core` (domain types, config models, identifiers, provenance, errors) imports nothing else from hangar and does no I/O.
 - Stage packages (`corpus`, `parsing`, `chunking`, `embedding`, `indexing`, `retrieval`, `generation`, `evaluation`) import `core` only. The one exception: `retrieval` may import the embedding and indexing interfaces.
 - Adapters (Qdrant, Mistral, sentence-transformers, pypdfium2) live inside their stage package. Only `pipelines` constructs them, in `pipelines/registry.py`, one `build_*` function per stage. Each config `type` field accepts only the value v0 implements, so the registry doesn't branch on it yet; a later version adds a value and its branch together.
-- `pipelines` imports stages and `core`; `cli` imports `pipelines` only. `observability` imports `core` only and may be used everywhere.
+- `pipelines` imports stages and `core`. `cli` may import `pipelines` and `observability`: its import-linter contract forbids `core`, `files` and every stage package, but doesn't list `pacing` yet. `observability` imports `core` only and may be used everywhere.
 - `files` (reading YAML files) and `pacing` (request spacing and retries for remote services) import `core` only, so stages and `pipelines` can share them while `core` stays free of I/O.
 
 Rules that cut across files:
@@ -66,7 +68,7 @@ Rules that cut across files:
 
 - Claude writes the code; the maintainer reviews every pull request. Explain each change in clear, plain language in the PR description.
 - One short branch per issue, named `v<version>/<issue>-<slug>` (for example `v0/2-uv-skeleton`), squash-merged into `main` through a pull request. One pull request per issue.
-- Conventional Commits: `feat`, `fix`, `docs`, `test`, `chore`.
+- Conventional Commits: `feat`, `fix`, `docs`, `test`, `refactor`, `chore`.
 - Decision records (ADR-0001 to ADR-0008) go in `docs/adr/`, each written in the milestone whose issue asks for it.
 
 ## Versions, tags and releases
