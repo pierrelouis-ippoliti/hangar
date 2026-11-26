@@ -1,4 +1,3 @@
-import hashlib
 import json
 import re
 import socket
@@ -11,8 +10,8 @@ import yaml
 
 from hangar.cli import main
 from hangar.core.config import config_hash
-from hangar.corpus.download import LocalCopyDownloader
 from hangar.pipelines.config import load_pipeline_config
+from tests.fixture_corpus import FixtureCorpus
 
 ROOT = Path(__file__).resolve().parents[2]
 V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
@@ -217,66 +216,46 @@ def test_unexpected_error_is_logged_with_its_traceback_and_the_key_redacted(
     assert FAKE_KEY not in capsys.readouterr().err
 
 
-def write_corpus(
-    workspace: Path, monkeypatch: pytest.MonkeyPatch, *, wrong_hash_for: str = ""
-) -> tuple[Path, LocalCopyDownloader]:
-    """Write a two-document manifest and a config that uses it; serve the files."""
-    sources = workspace / "sources"
-    sources.mkdir()
-    documents, files = [], {}
+def serve_corpus(
+    fixture_corpus: FixtureCorpus,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    wrong_hash_for: str = "",
+) -> Path:
+    """Write the fixture corpus config, break one hash if asked; serve the files."""
+    if wrong_hash_for:
+        manifest = yaml.safe_load(fixture_corpus.manifest.read_text())
 
-    for document_id, content in [("doc-one", b"one"), ("doc-two", b"two")]:
-        (sources / document_id).write_bytes(content)
-        url = f"https://example.org/{document_id}.pdf"
-        files[url] = sources / document_id
-        sha256 = hashlib.sha256(content).hexdigest()
-        documents.append(
-            {
-                "id": document_id,
-                "title": "Example",
-                "authority": "FAA",
-                "type": "handbook",
-                "language": "en",
-                "source_url": url,
-                "official_url": url,
-                "format": "pdf",
-                "edition": "B",
-                "content_date": "2023-01-01",
-                "page_modified_date": "2023-01-01",
-                "retrieved_on": "2026-11-04",
-                "status": "active",
-                "sha256": "f" * 64 if document_id == wrong_hash_for else sha256,
-                "reuse_note": "Made up for tests.",
-            }
-        )
+        for document in manifest["documents"]:
+            if document["id"] == wrong_hash_for:
+                document["sha256"] = "f" * 64
 
-    manifest = workspace / "manifest.yaml"
-    manifest.write_text(yaml.safe_dump({"snapshot": "c1", "documents": documents}))
-    config = yaml.safe_load(V0_CONFIG.read_text())
-    config["corpus"]["manifest"] = str(manifest)
-    config_path = workspace / "pipeline.yaml"
-    config_path.write_text(yaml.safe_dump(config))
+        fixture_corpus.manifest.write_text(yaml.safe_dump(manifest))
 
-    downloader = LocalCopyDownloader(files)
     monkeypatch.setattr(
-        "hangar.pipelines.fetch.HttpDownloader", lambda user_agent: downloader
+        "hangar.pipelines.fetch.HttpDownloader",
+        lambda user_agent: fixture_corpus.downloader,
     )
 
-    return config_path, downloader
+    return fixture_corpus.write_config()
 
 
 def test_fetch_downloads_every_document_then_nothing_on_a_second_run(
-    monkeypatch: pytest.MonkeyPatch, workspace: Path
+    monkeypatch: pytest.MonkeyPatch, workspace: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    config, downloader = write_corpus(workspace, monkeypatch)
+    config = serve_corpus(fixture_corpus, monkeypatch)
+    downloader = fixture_corpus.downloader
 
     assert main(["fetch", "--config", str(config)]) == 0
     assert sorted(p.name for p in (workspace / "data" / "raw").iterdir()) == [
-        "doc-one.pdf",
-        "doc-two.pdf",
+        "example-ac.html",
+        "example-handbook.pdf",
+        "example-regulation.xml",
     ]
     assert (workspace / "data" / "logs" / "fetch-log.jsonl").is_file()
-    assert {r["document_id"] for r in log_records(workspace)} >= {"doc-one", "doc-two"}
+    assert {r["document_id"] for r in log_records(workspace)} >= {
+        d.id for d in fixture_corpus.documents
+    }
 
     downloader.downloaded.clear()
     for log_file in run_logs(workspace):
@@ -285,21 +264,23 @@ def test_fetch_downloads_every_document_then_nothing_on_a_second_run(
     assert main(["fetch", "--config", str(config)]) == 0
     assert downloader.downloaded == []
     assert any(
-        "0 downloaded, 2 already present" in r["message"]
+        "0 downloaded, 3 already present" in r["message"]
         for r in log_records(workspace)
     )
 
 
 def test_fetch_stops_on_a_hash_mismatch_with_an_error_naming_the_document(
-    monkeypatch: pytest.MonkeyPatch, workspace: Path
+    monkeypatch: pytest.MonkeyPatch, workspace: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    config, _ = write_corpus(workspace, monkeypatch, wrong_hash_for="doc-two")
+    config = serve_corpus(
+        fixture_corpus, monkeypatch, wrong_hash_for="example-regulation"
+    )
 
     assert main(["fetch", "--config", str(config)]) == 1
 
     last = log_records(workspace)[-1]
     assert last["level"] == "ERROR"
-    assert last["message"].startswith("doc-two: ")
+    assert last["message"].startswith("example-regulation: ")
     assert "SHA-256" in last["message"]
 
 

@@ -4,11 +4,13 @@ import threading
 from collections.abc import Iterator
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from typing import Any
 
 import pytest
 
 from hangar.observability.logs import close_logging
+from tests.fixture_corpus import FixtureCorpus, write_fixture_corpus
 
 
 @pytest.fixture(autouse=True)
@@ -107,3 +109,15 @@ def fake_qdrant() -> Iterator[FakeQdrant]:
     yield fake
     server.shutdown()
     server.server_close()
+
+
+@pytest.fixture
+def fixture_corpus(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> FixtureCorpus:
+    """
+    The fixture corpus in the test's temporary folder, with real hashes.
+
+    ``HANGAR_DATA_DIR`` points at the ``data`` subfolder.
+    """
+    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
+
+    return write_fixture_corpus(tmp_path)

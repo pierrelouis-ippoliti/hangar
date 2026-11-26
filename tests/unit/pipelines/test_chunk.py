@@ -11,11 +11,9 @@ from hangar.core.chunks import Chunk, ChunksMeta
 from hangar.core.config import ChunkingConfig, PipelineConfig, config_hash
 from hangar.core.parsed import PageLocation, ParsedDocument, ParsedFile, Passage
 from hangar.pipelines.chunk import run_chunk
-from hangar.pipelines.config import load_pipeline_config
-from hangar.pipelines.settings import Settings, load_settings
+from hangar.pipelines.settings import Settings
+from tests.fixture_corpus import FixtureCorpus
 
-ROOT = Path(__file__).resolve().parents[3]
-V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
 FAKE_SHA256 = "0123456789abcdef" * 4
 
 # Two one-page documents: 5 words and 2 words.
@@ -40,10 +38,10 @@ def parsed_file(document_id: str, text: str, config: PipelineConfig) -> ParsedFi
 
 
 def setup(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> tuple[Settings, PipelineConfig]:
     """Write the parsed files of the snapshot, and point the settings at them."""
-    config = load_pipeline_config(V0_CONFIG)
+    config = fixture_corpus.config()
     folder = tmp_path / "data" / "parsed" / "c1"
     folder.mkdir(parents=True)
 
@@ -51,9 +49,7 @@ def setup(
         content = parsed_file(document_id, text, config).model_dump_json()
         (folder / f"{document_id}.json").write_text(content + "\n")
 
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
-
-    return load_settings(None), config
+    return fixture_corpus.settings(), config
 
 
 def word_chunker(size: int = 3) -> FixedTokenChunker:
@@ -71,9 +67,9 @@ def read_chunks(path: Path) -> list[Chunk]:
 
 
 def test_chunks_of_every_document_are_written_in_document_id_order(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
 
     run_chunk(settings, config, chunker=word_chunker())
 
@@ -87,9 +83,9 @@ def test_chunks_of_every_document_are_written_in_document_id_order(
 
 
 def test_meta_records_the_inputs_the_tokenizer_and_the_counts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     parsed = tmp_path / "data" / "parsed" / "c1" / "example-ac.json"
 
     returned = run_chunk(settings, config, chunker=word_chunker())
@@ -111,9 +107,9 @@ def test_meta_records_the_inputs_the_tokenizer_and_the_counts(
 
 
 def test_meta_holds_nothing_that_changes_between_identical_runs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     folder = tmp_path / "data" / "chunks" / "c1" / "fixed3"
 
     run_chunk(settings, config, chunker=word_chunker())
@@ -134,10 +130,9 @@ def test_meta_holds_nothing_that_changes_between_identical_runs(
 
 
 def test_a_missing_parsed_folder_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
-    config = load_pipeline_config(V0_CONFIG)
+    settings, config = fixture_corpus.settings(), fixture_corpus.config()
 
     with pytest.raises(ChunkError, match="run hangar parse first"):
-        run_chunk(load_settings(None), config, chunker=word_chunker())
+        run_chunk(settings, config, chunker=word_chunker())

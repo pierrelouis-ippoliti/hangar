@@ -11,15 +11,13 @@ from hangar.embedding.embedder import HashEmbedder
 from hangar.indexing.index import VectorIndexError
 from hangar.indexing.manifest import IndexManifest
 from hangar.indexing.qdrant import QdrantIndex
-from hangar.pipelines.config import load_pipeline_config
 from hangar.pipelines.embed import run_embed
 from hangar.pipelines.index import run_index
-from hangar.pipelines.settings import Settings, load_settings
+from hangar.pipelines.settings import Settings
 from hangar.pipelines.vector_file import read_vectors, write_vectors
 from tests.builders import consecutive_chunks
+from tests.fixture_corpus import FixtureCorpus
 
-ROOT = Path(__file__).resolve().parents[3]
-V0_CONFIG = ROOT / "configs" / "pipelines" / "v0.yaml"
 COLLECTION = "c1__fixed512__bge-m3-dense"
 TEXTS = ["one two three ", "four five", "six seven"]
 
@@ -40,11 +38,10 @@ def write_chunks(tmp_path: Path, texts: list[str]) -> None:
 
 
 def setup(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, texts: list[str] = TEXTS
+    tmp_path: Path, fixture_corpus: FixtureCorpus, texts: list[str] = TEXTS
 ) -> tuple[Settings, PipelineConfig]:
     """Write a chunks file and embed it with the hash embedder."""
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
-    settings, config = load_settings(None), load_pipeline_config(V0_CONFIG)
+    settings, config = fixture_corpus.settings(), fixture_corpus.config()
     write_chunks(tmp_path, texts)
     run_embed(settings, config, embedder=HashEmbedder(dimension=8))
 
@@ -65,9 +62,9 @@ class CountsOneTooMany(QdrantIndex):
 
 
 def test_each_chunk_becomes_one_point_with_its_chunk_as_payload(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     client = QdrantClient(":memory:")
 
     run_index(settings, config, tmp_path / "results", QdrantIndex(client, COLLECTION))
@@ -79,9 +76,9 @@ def test_each_chunk_becomes_one_point_with_its_chunk_as_payload(
 
 
 def test_the_manifest_records_the_collection_and_its_inputs(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     index = QdrantIndex(QdrantClient(":memory:"), COLLECTION)
 
     returned = run_index(settings, config, tmp_path / "results", index)
@@ -107,9 +104,9 @@ def test_the_manifest_records_the_collection_and_its_inputs(
 
 
 def test_running_index_twice_leaves_the_same_points_and_manifest(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     client = QdrantClient(":memory:")
     results = tmp_path / "results"
     manifest = results / "v0" / "index-manifest.json"
@@ -122,38 +119,33 @@ def test_running_index_twice_leaves_the_same_points_and_manifest(
 
 
 def test_points_of_an_earlier_build_are_removed(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     client = QdrantClient(":memory:")
     run_index(settings, config, tmp_path / "results", QdrantIndex(client, COLLECTION))
 
-    setup(tmp_path, monkeypatch, texts=["eight nine"])
+    setup(tmp_path, fixture_corpus, texts=["eight nine"])
     run_index(settings, config, tmp_path / "results", QdrantIndex(client, COLLECTION))
 
     assert [payload["text"] for _, payload, _ in points(client)] == ["eight nine"]
 
 
 def test_missing_vectors_stop_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    monkeypatch.setenv("HANGAR_DATA_DIR", str(tmp_path / "data"))
+    settings, config = fixture_corpus.settings(), fixture_corpus.config()
     write_chunks(tmp_path, TEXTS)
     index = QdrantIndex(QdrantClient(":memory:"), COLLECTION)
 
     with pytest.raises(VectorIndexError, match=f"^{COLLECTION}: .*run hangar embed"):
-        run_index(
-            load_settings(None),
-            load_pipeline_config(V0_CONFIG),
-            tmp_path / "results",
-            index,
-        )
+        run_index(settings, config, tmp_path / "results", index)
 
 
 def test_vectors_made_from_other_chunks_stop_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     write_chunks(tmp_path, ["eight nine"])
     index = QdrantIndex(QdrantClient(":memory:"), COLLECTION)
 
@@ -162,9 +154,9 @@ def test_vectors_made_from_other_chunks_stop_the_run(
 
 
 def test_a_chunk_without_a_vector_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     path = vectors_folder(tmp_path) / "vectors.parquet"
     write_vectors(path, read_vectors(path)[:-1], dimension=8)
     index = QdrantIndex(QdrantClient(":memory:"), COLLECTION)
@@ -174,9 +166,9 @@ def test_a_chunk_without_a_vector_stops_the_run(
 
 
 def test_a_point_count_that_disagrees_stops_the_run_without_a_manifest(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     index = CountsOneTooMany(QdrantClient(":memory:"), COLLECTION)
 
     with pytest.raises(VectorIndexError, match="4 points for 3 chunks"):
@@ -186,9 +178,9 @@ def test_a_point_count_that_disagrees_stops_the_run_without_a_manifest(
 
 
 def test_a_chunk_with_two_vectors_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     path = vectors_folder(tmp_path) / "vectors.parquet"
     records = read_vectors(path)
     write_vectors(path, [*records[:-1], records[0]], dimension=8)
@@ -199,9 +191,9 @@ def test_a_chunk_with_two_vectors_stops_the_run(
 
 
 def test_a_vector_for_an_unknown_chunk_stops_the_run(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, fixture_corpus: FixtureCorpus
 ) -> None:
-    settings, config = setup(tmp_path, monkeypatch)
+    settings, config = setup(tmp_path, fixture_corpus)
     path = vectors_folder(tmp_path) / "vectors.parquet"
     records = read_vectors(path)
     stranger = records[-1].model_copy(update={"chunk_id": "0" * 16})
