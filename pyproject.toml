@@ -23,7 +23,7 @@ hangar = "hangar.cli:main"
 
 [dependency-groups]
 dev = [
-    "import-linter>=2.15",
+    "import-linter>=2.17",
     "mypy>=2.4.1",
     "pre-commit>=4.7.0",
     "pytest>=9.2.0",
@@ -138,7 +138,8 @@ forbidden_modules = [
     "hangar.indexing",
     "hangar.retrieval",
     "hangar.generation",
-    "hangar.evaluation",
+    # hangar.evaluation goes back here when #31 creates the package
+    # (import-linter 2.16+ rejects missing modules).
     "hangar.files",
 ]
 
@@ -155,7 +156,8 @@ forbidden_modules = [
     "hangar.parsing",
     "hangar.chunking",
     "hangar.generation",
-    "hangar.evaluation",
+    # hangar.evaluation goes back here when #31 creates the package
+    # (import-linter 2.16+ rejects missing modules).
     "hangar.embedding.st_embedder",
     "hangar.indexing.qdrant",
 ]
