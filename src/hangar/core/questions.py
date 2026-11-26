@@ -176,6 +176,39 @@ class QuestionRecord(QuestionModel):
             )
 
 
+# Any run of spaces, tabs and line breaks.
+_WHITESPACE = re.compile(r"\s+")
+
+
+def quote_appears(quote: str, passage_text: str) -> bool:
+    """
+    Tell whether a quote appears word for word in a passage's text.
+
+    Parsing breaks the text into lines where the document does, such as at
+    the end of each line of a PDF column, and a quote is written on one line
+    of JSON. So every run of whitespace, line breaks included, counts as one
+    space on both sides, and whitespace at the ends of the quote is ignored.
+    Nothing else may differ: case, punctuation, hyphens and characters must
+    be exactly those of the parsed text.
+
+    Args:
+        quote: The quote, as written in an evidence item.
+        passage_text: The parsed text of the passage.
+
+    Returns:
+        True if the quote, with its whitespace made single spaces, is part
+        of the passage's text with its whitespace made single spaces. An
+        empty quote is never found.
+    """
+    wanted = _single_spaces(quote).strip()
+
+    return bool(wanted) and wanted in _single_spaces(passage_text)
+
+
+def _single_spaces(text: str) -> str:
+    return _WHITESPACE.sub(" ", text)
+
+
 @dataclass(frozen=True)
 class _Reading:
     """

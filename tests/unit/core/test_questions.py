@@ -9,6 +9,7 @@ from hangar.core.questions import (
     Evidence,
     QuestionRecord,
     check_questions,
+    quote_appears,
     read_questions,
 )
 
@@ -310,3 +311,39 @@ def test_every_problem_is_reported_at_once() -> None:
         "mix: 49 questions, the target is 50",
         "mix: 7 lookup questions, the target is 8",
     ]
+
+
+# A quote matches its passage word for word; only whitespace may differ.
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "Torque the bolt.",
+        "the bolt. Then",
+        "Torque the  bolt.",
+        "Torque the bolt.\nThen check",
+        "  Torque the bolt.  ",
+    ],
+)
+def test_quote_found_in_the_passage_whatever_its_whitespace(quote: str) -> None:
+    passage = "Step 1:\nTorque the \nbolt. Then\tcheck it."
+
+    assert quote_appears(quote, passage)
+
+
+@pytest.mark.parametrize(
+    "quote",
+    [
+        "torque the bolt.",
+        "Torquethe bolt.",
+        "Torque the bolt, then check",
+        "Torque the bolt. Then check it’s",
+        "",
+        "   ",
+    ],
+)
+def test_quote_with_any_other_difference_is_not_found(quote: str) -> None:
+    passage = "Step 1:\nTorque the \nbolt. Then check it's done."
+
+    assert not quote_appears(quote, passage)
