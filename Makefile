@@ -1,4 +1,4 @@
-.PHONY: setup check qdrant-up qdrant-down reproduce clean-data
+.PHONY: setup check fix qdrant-up qdrant-down reproduce clean-data
 
 QDRANT_READY_URL := http://127.0.0.1:6333/readyz
 
@@ -18,6 +18,11 @@ check:
 	uv run --locked mypy
 	uv run --locked lint-imports
 	uv run --locked pytest --cov=hangar --cov-report=term-missing
+
+# Format the code, then apply ruff's safe fixes.
+fix:
+	uv run --locked ruff format
+	uv run --locked ruff check --fix
 
 # Start Qdrant and wait up to 30 seconds until it is ready.
 qdrant-up:
